@@ -15,37 +15,55 @@ const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.qR66PFA-aflspGRWnXRmvtwgrYc`
 const CreatorTag = `Xitef156#1822`
 const CreatorID = `776140752752869398`
 const AuthifCreator = `message.author.id === ${CreatorID}`
+const AuthifNotCreator = `message.author.id !== ${CreatorID}`
 const Ch_Logs_1 = `831987411265388575`
 const Ch_Logs_2 = `831987484300410920`
+const Ch_Err = `834751451090911292`
 const Ch_cmd = `777937994245996545`
+const Ch_Msg = `835926106719780885`
+const Ch_Msg_RG = `835932970979557376`
+const Gu_RG_ID = `687720397638336550`
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
-const Font = "Gill Sans Ultra Bold"
+const Font = "Electramaniacal"
+
+let Font_Size = `150`
+
 
 var servers = {};
-
-Client.on('shardError', error => {
-    console.error('A websocket connection encountered an error:', error);
-});
-  
 
 Client.on(`ready`, async () => {
     console.log(`Coucou`)
     Client.user.setStatus(`dnd`);
     Client.user.setActivity(`Prefix ` + `help`);
-    let GuildsID = Client.guilds.cache.map(guild => guild.id);
-    let GuildsName = Client.guilds.cache.map(guild => guild.name);
+    const GuildsID = Client.guilds.cache.map(guild => guild.id);
+    const GuildsName = Client.guilds.cache.map(guild => guild.name);
     console.log(`${GuildsID} , ${GuildsName}`);
-    
-const guild_LRDG_2 = Client.guilds.cache.find(guild => guild.id === `687720397638336550`);
 
-   setInterval(function () {
-      var memberCount = guild_LRDG_2.memberCount;
-      const memberCountChannel = guild_LRDG_2.channels.cache.find(ch => ch.id === `811211286158245909`);
-      memberCountChannel.setName(`Membre : ${memberCount} membres`);
-   }, 1000);
+    const Gu_RG = Client.guilds.cache.get(Gu_RG_ID)
+
+    var memberCount = Gu_RG.memberCount;
+    const Channel = Client.channels.cache.get(`836914665103425536`)
+    Channel.setName(`Membre RG : ${memberCount}`);
+});
+
+Client.on("voiceStateUpdate", (oldVoiceState, newVoiceState) => { // Listeing to the voiceStateUpdate event
+  if (newVoiceState.channel) { // The member connected to a channel.
+    
+  if(newVoiceState.channel.guild.id == Gu_RG_ID){
+    Client.channels.cache.get(Ch_Msg_RG).send(`**${newVoiceState.member.user.tag}** connecté à **${newVoiceState.channel.name}**.`);
+  if (oldVoiceState.channel) {
+    Client.channels.cache.get(Ch_Msg_RG).send(`**${oldVoiceState.member.user.tag}** déconnecté à **${oldVoiceState.channel.name}** ou s'est mute/demute.`)
+  }
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Serveur : **${newVoiceState.guild.name}** : **${newVoiceState.member.user.tag}** connecté à **${newVoiceState.channel.name}**.`);
+  } if (oldVoiceState.channel) { // The member disconnected from a channel.
+    Client.channels.cache.get(Ch_Logs_2).send(`Serveur : **${oldVoiceState.guild.name}** : **${oldVoiceState.member.user.tag}** déconnecté à **${oldVoiceState.channel.name}** ou s'est mute/demute.`)
+  }
+}
 });
 
 Client.on(`channelCreate`, async (channel) => {
+  if(channel.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')){
 	const fetchedLogs = await channel.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'CHANNEL_CREATE',
@@ -53,9 +71,13 @@ Client.on(`channelCreate`, async (channel) => {
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
   Client.channels.cache.get(Ch_Logs_2).send(`Channel crée : **${channel.name}** dans **${channel.guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Channel crée : **${channel.name}** dans **${channel.guild.name}**`);
+}
 });
 
 Client.on(`channelDelete`, async (channel) => {
+  if(channel.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await channel.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'CHANNEL_DELETE',
@@ -63,13 +85,19 @@ Client.on(`channelDelete`, async (channel) => {
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
   Client.channels.cache.get(Ch_Logs_2).send(`Channel détruit : **${channel.name}** dans **${channel.guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Channel détruit : **${channel.name}** dans **${channel.guild.name}**`);
+}
 });
 
-Client.on(`error`, async (error) => {
-  console.error(`Client's WebSocket encountered a connection error: **${error}**`);
+Client.on('shardError', error => {
+  Client.channels.cache.get(Ch_Err).send(`Erreur Client : **${error}**`);
+  console.log(error)
+  console.error(error)
 });
 
 Client.on(`guildBanRemove`, async (guild, user) => {
+  if(guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_BAN_REMOVE',
@@ -77,6 +105,9 @@ Client.on(`guildBanRemove`, async (guild, user) => {
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
   Client.channels.cache.get(Ch_Logs_1).send(`**${user.tag}** est débanni de **${guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_1).send(`**${user.tag}** est débanni de **${guild.name}**`);
+}
 });
 
 Client.on(`guildDelete`, async (guild) => {
@@ -84,13 +115,17 @@ Client.on(`guildDelete`, async (guild) => {
 });
 
 Client.on(`messageDelete`, async (message) => {
+  if(message.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await message.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MESSAGE_DELETE',
 	})
 	const banLog = fetchedLogs.entries.first();
-	const { executor } = banLog;
-  Client.channels.cache.get(Ch_Logs_2).send(`Message supprimé -> **${message}** dans **${message.guild.name}** par **${executor.tag}**`);
+	const { executor, target } = banLog;
+  Client.channels.cache.get(Ch_Logs_2).send(`Message supprimé -> **${message}** dans **${message.guild.name}** par **${executor.tag}** de **${target.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Message supprimé -> **${message}** dans **${message.guild.name}**  de **${message.member.tag}**`);
+}
 });
 
 Client.on(`messageUpdate`, async (oldMessage, newMessage) => {
@@ -98,16 +133,21 @@ Client.on(`messageUpdate`, async (oldMessage, newMessage) => {
 });
 
 Client.on(`roleCreate`, async (role) => {
+  if(role.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await role.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'ROLE_CREATE',
 	})
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
-  Client.channels.cache.get(Ch_Logs_2).send(`**${role.name}** a été créer dans **${role.guild.name}** par **${executor.tag}**`)
+  Client.channels.cache.get(Ch_Logs_2).send(`**${role.name}** a été créer dans **${role.guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`**${role.name}** a été créer dans **${role.guild.name}**`);
+}
 });
 
 Client.on(`roleDelete`, async (role) => {
+  if(role.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await role.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'ROLE_DELETE',
@@ -115,9 +155,13 @@ Client.on(`roleDelete`, async (role) => {
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
   Client.channels.cache.get(Ch_Logs_2).send(`Le role **${role.name}** a été retiré dans **${role.guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Le role **${role.name}** a été retiré dans **${role.guild.name}**`);
+}
 });
 
 Client.on(`roleUpdate`, async (role) => {
+  if(role.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await role.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'ROLE_UPDATE',
@@ -125,76 +169,155 @@ Client.on(`roleUpdate`, async (role) => {
 	const banLog = fetchedLogs.entries.first()
 	const { executor } = banLog
   Client.channels.cache.get(Ch_Logs_2).send(`Le role **${role.name}** a été changé dans **${role.guild.name}** par **${executor.tag}**`);
+} else {
+  Client.channels.cache.get(Ch_Logs_2).send(`Le role **${role.name}** a été changé dans **${role.guild.name}**`);
+}
 });
 
-Client.on(`guildMemberUpdate`, (oldMember, newMember) => {
+Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
+  if(oldMember.guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
+  
+	const fetchedLogs = await oldMember.guild.fetchAuditLogs({
+		limit: 1,
+		type: 'MEMBER_UPDATE',
+	})
+	const banLog = fetchedLogs.entries.first()
+	const { executor } = banLog
+
   if (oldMember.roles.cache.size > newMember.roles.cache.size) {
-      const Embed = new Discord.MessageEmbed();
-      Embed.setColor(`RED`);
-      Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL());
+      const Embed = new Discord.MessageEmbed()
+      Embed.setColor(`RED`)
+      Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
       
       oldMember.roles.cache.forEach(role => {
           if (!newMember.roles.cache.has(role.id)) {
               Embed.addField(`Role Retiré`, role.name)
               .addField(`Serveur`, newMember.guild.name)
+              .addField(`Exécuteur`, executor.tag)
               .setTimestamp()
-              .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`);
+              .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+              Client.channels.cache.get(Ch_Logs_2).send(Embed)
+              return;
           }
-      });
+      })
 
-      Client.channels.cache.get(Ch_Logs_2).send(Embed);
+      Client.channels.cache.get(Ch_Logs_2).send(Embed)
   } else if (oldMember.roles.cache.size < newMember.roles.cache.size) {
-      const Embed = new Discord.MessageEmbed();
-      Embed.setColor(`GREEN`);
-      Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL());
+      const Embed = new Discord.MessageEmbed()
+      Embed.setColor(`GREEN`)
+      Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
       
       newMember.roles.cache.forEach(role => {
           if (!oldMember.roles.cache.has(role.id)) {
               Embed.addField(`Role Ajouté`, role.name)
               .addField(`Serveur`, newMember.guild.name)
+              .addField(`Exécuteur`, executor.tag)
               .setTimestamp()
-              .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`);
+              .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+              Client.channels.cache.get(Ch_Logs_2).send(Embed)
+              return;
           }
-      });
-      Client.channels.cache.get(Ch_Logs_2).send(Embed);
-  }
-});
-
-Client.on('guildMemberUpdate', (oldMember, newMember) => {
-  if (!oldMember.nickname && newMember.nickname) {
+      })
+  } else if (!oldMember.nickname && newMember.nickname) {
     const membernewnicklog = new Discord.MessageEmbed()
       .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
       .setDescription(`**${newMember} pseudo ajouté dans : ${oldMember.guild.name}**`)
       .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+      .addField(`Exécuteur`, executor.tag)
       .setTimestamp()
       .setColor('#ffff00')
       .addField(`New nickname`, newMember.nickname)
-    Client.channels.cache.get(Ch_Logs_2).send(membernewnicklog);
+    Client.channels.cache.get(Ch_Logs_2).send(membernewnicklog)
     return;
-  }
-  if (oldMember.nickname && !newMember.nickname) {
+  } else if (oldMember.nickname && !newMember.nickname) {
     const memberremovenicklog = new Discord.MessageEmbed()
       .setAuthor(`${oldMember.user.tag}`, `${oldMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
       .setDescription(`**${oldMember} pseudo retiré dans : ${oldMember.guild.name}**`)
       .setFooter(`${oldMember.user.username}'s ID: ${oldMember.id}`)
+      .addField(`Exécuteur`, executor.tag)
       .setTimestamp()
       .setColor('#f04747')
       .addField(`Old nickname`, oldMember.nickname)
-    Client.channels.cache.get(Ch_Logs_2).send(memberremovenicklog);
+    Client.channels.cache.get(Ch_Logs_2).send(memberremovenicklog)
     return;
-  }
-  if (oldMember.nickname && newMember.nickname) {
+  } else if (oldMember.nickname && newMember.nickname) {
     const memberchangednicklog = new Discord.MessageEmbed()
       .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
       .setDescription(`**${newMember} pseudo changé dans : ${oldMember.guild.name}**`)
       .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+      .addField(`Exécuteur`, executor.tag)
       .setTimestamp()
       .setColor('#ff4500')
       .addField(`Avant`, oldMember.nickname)
-      .addField(`Après`, newMember.nickname);
-    Client.channels.cache.get(Ch_Logs_2).send(memberchangednicklog);
+      .addField(`Après`, newMember.nickname)
+    Client.channels.cache.get(Ch_Logs_2).send(memberchangednicklog)
     return;
   }
+} else {
+  if (oldMember.roles.cache.size > newMember.roles.cache.size) {
+    const Embed = new Discord.MessageEmbed()
+    Embed.setColor(`RED`)
+    Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
+    
+    oldMember.roles.cache.forEach(role => {
+        if (!newMember.roles.cache.has(role.id)) {
+            Embed.addField(`Role Retiré`, role.name)
+            .addField(`Serveur`, newMember.guild.name)
+            .setTimestamp()
+            .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+            Client.channels.cache.get(Ch_Logs_2).send(Embed)
+            return;
+        }
+    })
+
+    Client.channels.cache.get(Ch_Logs_2).send(Embed)
+} else if (oldMember.roles.cache.size < newMember.roles.cache.size) {
+    const Embed = new Discord.MessageEmbed()
+    Embed.setColor(`GREEN`)
+    Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
+    
+    newMember.roles.cache.forEach(role => {
+        if (!oldMember.roles.cache.has(role.id)) {
+            Embed.addField(`Role Ajouté`, role.name)
+            .addField(`Serveur`, newMember.guild.name)
+            .setTimestamp()
+            .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+            Client.channels.cache.get(Ch_Logs_2).send(Embed)
+            return;
+        }
+    })
+} else if (!oldMember.nickname && newMember.nickname) {
+  const membernewnicklog = new Discord.MessageEmbed()
+    .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setDescription(`**${newMember} pseudo ajouté dans : ${oldMember.guild.name}**`)
+    .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+    .setTimestamp()
+    .setColor('#ffff00')
+    .addField(`New nickname`, newMember.nickname)
+  Client.channels.cache.get(Ch_Logs_2).send(membernewnicklog)
+  return;
+} else if (oldMember.nickname && !newMember.nickname) {
+  const memberremovenicklog = new Discord.MessageEmbed()
+    .setAuthor(`${oldMember.user.tag}`, `${oldMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setDescription(`**${oldMember} pseudo retiré dans : ${oldMember.guild.name}**`)
+    .setFooter(`${oldMember.user.username}'s ID: ${oldMember.id}`)
+    .setTimestamp()
+    .setColor('#f04747')
+    .addField(`Old nickname`, oldMember.nickname)
+  Client.channels.cache.get(Ch_Logs_2).send(memberremovenicklog)
+  return;
+} else if (oldMember.nickname && newMember.nickname) {
+  const memberchangednicklog = new Discord.MessageEmbed()
+    .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setDescription(`**${newMember} pseudo changé dans : ${oldMember.guild.name}**`)
+    .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+    .setTimestamp()
+    .setColor('#ff4500')
+    .addField(`Avant`, oldMember.nickname)
+    .addField(`Après`, newMember.nickname)
+  Client.channels.cache.get(Ch_Logs_2).send(memberchangednicklog)
+}
+}
 });
 
 Client.on(`guildMemberRemove`, async (member) => {
@@ -202,18 +325,12 @@ Client.on(`guildMemberRemove`, async (member) => {
 		limit: 1,
 		type: 'MEMBER_KICK',
 	});
-	// Since we only have 1 audit log entry in this collection, we can simply grab the first one
 	const kickLog = fetchedLogs.entries.first();
 
-	// Let's perform a coherence check here and make sure we got *something*
-	if (!kickLog) return Client.channels.cache.get(Ch_Logs_1).send(`**${member.user.tag}** a quitté le serveur, très probablement de leur propre volonté.`);
+	if (!kickLog) return Client.channels.cache.get(Ch_Logs_1).send(`**${member.user.tag}** a quitté le serveur, très probablement de sa propre volonté.`);
 
-	// We now grab the user object of the person who kicked our member
-	// Let us also grab the target of this action to double-check things
 	const { executor, target } = kickLog;
 
-	// And now we can update our output with a bit more information
-	// We will also run a check to make sure the log we got was for the same kicked member
 	if (target.id === member.id) {
 		Client.channels.cache.get(Ch_Logs_1).send(`**${member.user.tag}** a quitté le serveur ; il est kick par **${executor.tag}**`);
 	} else {
@@ -226,19 +343,13 @@ Client.on('guildBanAdd', async (guild, user) => {
 		limit: 1,
 		type: 'MEMBER_BAN_ADD',
 	});
-	// Since we only have 1 audit log entry in this collection, we can simply grab the first one
 	const banLog = fetchedLogs.entries.first();
   const banReason = fetchedLogs.entries.first().reason;
 
-	// Let's perform a coherence check here and make sure we got *something*
 	if (!banLog) return Client.channels.cache.get(Ch_Logs_1).send(`**${user.tag}** est banni de **${guild.name}** mais rien n'a pu être trouvé.`);
 
-	// We now grab the user object of the person who banned the user
-	// Let us also grab the target of this action to double-check things
 	const { executor, target } = banLog;
 
-	// And now we can update our output with a bit more information
-	// We will also run a check to make sure the log we got was for the same kicked member
 	if (target.id === user.id) {
 		Client.channels.cache.get(Ch_Logs_1).send(`**${user.tag}** est ban de **${guild.name}** par **${executor.tag}**\nRaison : **${banReason}**`);
 	} else {
@@ -251,19 +362,14 @@ Client.on(`guildMemberAdd`, async member => {
     const applyText = (canvas, text) => {
         const ctx = canvas.getContext('2d');
     
-        // Declare a base size of the font
-        let fontSize = 50;
     
         do {
-            // Assign the font to the context and decrement it so it can be measured again
-            ctx.font = `${fontSize -= 10}px ${Font}`;
-            // Compare pixel width of the text to the canvas minus the approximate avatar size
+            ctx.font = `${Font_Size -= 10}px ${Font}`;
         } while (ctx.measureText(text).width > canvas.width - 300);
     
-        // Return the result to use in the actual canvas
         return ctx.font;
     };
-  const channel = member.guild.channels.cache.find(ch => ch.id == '796070968308006963');
+  const channel = await member.guild.channels.cache.find(ch => ch.name.includes(`arrivée`));
 
 	if (!channel) return;
 
@@ -273,21 +379,64 @@ Client.on(`guildMemberAdd`, async member => {
 	const background = await Canvas.loadImage('./wallpaper.png');
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-	ctx.strokeStyle = '#74037b';
+  var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grd.addColorStop(0, "#00fbff");
+  grd.addColorStop(1, "#ffffff");
+	ctx.strokeStyle = grd;
+  ctx.lineWidth = 5;
 	ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-	// Slightly smaller text placed above the member's display name
-	ctx.font = `20px ${Font}`;
+	ctx.font = `${Font_Size - 80}px ${Font}`;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = '#53dad8';
 	ctx.fillStyle = `#0c00ff`;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 5;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
 	ctx.fillText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.78125;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 1;
 
-	// Add an exclamation point here and below
-	ctx.font = applyText(canvas, `${member.displayName}!`);
-	ctx.fillStyle = '#dc00ff';
-	ctx.fillText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
+  if(member.displayName.includes(" ")){
+    var str = member.displayName
+  var DisplayName = str.replace(" ", "      ")
+  }
 
+	ctx.font = applyText(canvas, `${DisplayName}!`);
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = '#bb0000';
+  ctx.strokeStyle = '#ffffff';
+	ctx.fillStyle = '#ff0000';
+  ctx.lineWidth = 8;
+  ctx.strokeText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
+	ctx.fillText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.25;
+  ctx.strokeText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
+
+  
+  ctx.globalAlpha = 1;
 	ctx.beginPath();
-	ctx.arc(125, 125, 100, 0, Math.PI * 2, true);
+  var grd2 = ctx.createLinearGradient(0, 0, 200, 0);
+  grd2.addColorStop(0, "#ff0f00");
+  grd2.addColorStop(0.17, "#ff5100");
+  grd2.addColorStop(0.34, "#f3ff00");
+  grd2.addColorStop(0.53, "#32ff00");
+  grd2.addColorStop(0.72, "#00f7ff");
+  grd2.addColorStop(0.85, "#0004ff");
+  grd2.addColorStop(1, "#7c00ff");
+	ctx.arc(125, 125, 100, 0, Math.PI * 2);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = grd2
+  ctx.stroke();
 	ctx.closePath();
 	ctx.clip();
 
@@ -304,19 +453,13 @@ Client.on(`guildMemberRemove`, async member => {
     const applyText = (canvas, text) => {
         const ctx = canvas.getContext('2d');
     
-        // Declare a base size of the font
-        let fontSize = 50;
-    
         do {
-            // Assign the font to the context and decrement it so it can be measured again
-            ctx.font = `${fontSize -= 10}px ${Font}`;
-            // Compare pixel width of the text to the canvas minus the approximate avatar size
+            ctx.font = `${Font_Size -= 10}px ${Font}`;
         } while (ctx.measureText(text).width > canvas.width - 300);
     
-        // Return the result to use in the actual canvas
         return ctx.font;
     };
-  const channel = member.guild.channels.cache.find(ch => ch.id == '796073933052575785');
+  const channel = await member.guild.channels.cache.find(ch => ch.name.includes(`adieu`));
 
 	if (!channel) return;
 
@@ -326,21 +469,64 @@ Client.on(`guildMemberRemove`, async member => {
 	const background = await Canvas.loadImage('./wallpaper 2.png');
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-	ctx.strokeStyle = '#74037b';
+	var grd1 = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grd1.addColorStop(0, "#ff0f00");
+  grd1.addColorStop(1, "#ffffff");
+	ctx.strokeStyle = grd1;
+  ctx.lineWidth = 5;
 	ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-	// Slightly smaller text placed above the member's display name
-	ctx.font = `20px ${Font}`;
+	ctx.font = `${Font_Size - 80}px ${Font}`;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = '#bb0000';
 	ctx.fillStyle = `#ff2e00`;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 5;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
 	ctx.fillText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.78125;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 1;
 
-	// Add an exclamation point here and below
-	ctx.font = applyText(canvas, `${member.displayName}!`);
+  if(member.displayName.includes(" ")){
+    var str = member.displayName
+  var DisplayName = str.replace(" ", "      ")
+  }
+
+	ctx.font = applyText(canvas, `${DisplayName}!`);
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = '#bb0000';
+  ctx.strokeStyle = '#ffffff';
 	ctx.fillStyle = '#ff0000';
-	ctx.fillText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
+  ctx.lineWidth = 8;
+  ctx.strokeText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
+	ctx.fillText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.25;
+  ctx.strokeText(`${DisplayName}`, canvas.width - 450, canvas.height / 1.75);
 
+  
+  ctx.globalAlpha = 1;
 	ctx.beginPath();
-	ctx.arc(125, 125, 100, 0, Math.PI * 2, true);
+  var grd2 = ctx.createLinearGradient(0, 0, 200, 0);
+  grd2.addColorStop(0, "#ff0f00");
+  grd2.addColorStop(0.17, "#ff5100");
+  grd2.addColorStop(0.34, "#f3ff00");
+  grd2.addColorStop(0.53, "#32ff00");
+  grd2.addColorStop(0.72, "#00f7ff");
+  grd2.addColorStop(0.85, "#0004ff");
+  grd2.addColorStop(1, "#7c00ff");
+	ctx.arc(125, 125, 100, 0, Math.PI * 2);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = grd2
+  ctx.stroke();
 	ctx.closePath();
 	ctx.clip();
 
@@ -384,7 +570,6 @@ Client.on('guildCreate', guild => {
 Client.on(`message`,async message => {
 
 const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
-  if(!message.content.startsWith(Prefix)) return
   const args = message.content.substring(Prefix.length).split(` `);
 
     if(message.content.startsWith(`${Prefix}prefix`))  {
@@ -455,12 +640,23 @@ let command = args.shift().toLowerCase()
       })
   }
 
+  if(message.content == Prefix + `ptdr`){
+    message.delete()
+    const Embed = new Discord.MessageEmbed()
+      .setAuthor(`Nouveau Logo`)
+      .setImage("https://media.discordapp.net/attachments/787081937248059445/833821421012123658/Logo_Zoo_des_Geeks_1.1.png?width=406&height=468")
+      .setTimestamp()
+      .setColor('#42ff00')
+    message.channel.send(Embed)
+}
+
     if (command === `weather`) {
         const city = args[0]
 
     weather.find({search: args.join(` `), degreeType: `C`}, function(error, result){
 
       if (error) return message.channel.send(error)
+      if (error) return Client.channels.cache.get(Ch_Err).send(`Erreur de la commande *weather* : **${error}**`)
       if (!city) return message.channel.send(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
 
       if (result === undefined || result.length === 0) return message.channel.send(`Vous n'avez pas spécifié de lieu valide`)
@@ -612,7 +808,52 @@ if(message.content == Prefix + "link"){
 if(message.author.bot) return; // Les commandes en privé ne peuvent pa être reçu
 if(message.channel.type == `dm`) return;
 
-const voiceChannel = message.member.voice.channel
+  if(message.guild.member(Client.user).hasPermission('MANAGE_ROLES')){
+  var role = message.guild.roles.cache.find(role => role.name === "Dragon Bot");
+      role.edit({
+          color: '#42ff00'
+      })
+}
+
+if(message.content.startsWith(Prefix + `canvas`)){
+  const canvas = Canvas.createCanvas(150, 100);
+  const ctx = canvas.getContext('2d');
+
+  ctx.font = `${Font_Size - 80}px ${Font}`;
+ctx.shadowOffsetX = 2;
+ctx.shadowOffsetY = 2;
+ctx.shadowBlur = 5;
+ctx.shadowColor = '#53dad8';
+ctx.fillStyle = `#0c00ff`;
+ctx.strokeStyle = '#ffffff';
+ctx.lineWidth = 5;
+ctx.strokeText(`${args.join(` `)}`, 5, 50);
+ctx.fillText(`${args.join(` `)}`, 5, 50);
+
+const attachment = new Discord.MessageAttachment(canvas.toBuffer(), `${args.join(` `)}.png`)
+
+  message.channel.send(attachment)
+}
+
+if(message.content.startsWith(Prefix + `canvas_c`)){
+  const canvas = Canvas.createCanvas(args.join(` `).length * 400, 690);
+  const ctx = canvas.getContext('2d');
+
+  ctx.font = `700px ${Font}`;
+ctx.shadowOffsetX = 20;
+ctx.shadowOffsetY = 20;
+ctx.shadowBlur = 50;
+ctx.shadowColor = '#53dad8';
+ctx.fillStyle = `#0c00ff`;
+ctx.strokeStyle = '#ffffff';
+ctx.lineWidth = 50;
+ctx.strokeText(`${args.join(` `)}`, 100, 400);
+ctx.fillText(`${args.join(` `)}`, 100, 400);
+
+const attachment = new Discord.MessageAttachment(canvas.toBuffer(), `${args.join(` `)}.png`)
+
+  message.channel.send(attachment)
+}
 
     if(!message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
         if(message.content.startsWith(Prefix + `ban`)){
@@ -659,27 +900,34 @@ const voiceChannel = message.member.voice.channel
     }
 
     if(message.content.startsWith(Prefix + `role`)){
-      const mention = message.mentions.members.first();
-      Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}role** **${args[0]} ${args[1]} ${args[2]}** dans **${message.guild.name}**`)
-
-      if(mention == undefined){
-        message.reply(`Membre non ou mal mentionné`);
-      }
-      else {
-        if(!args[0]) return message.channel.send ("add ; remove ; delete ; create");
+      Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}role** **${args[1]} ${args[2]} ${args[3]}** dans **${message.guild.name}**`)
+      if(!args[0]) return message.channel.send ("add ; remove ; delete ; create");
         if(args[0] == "add"){
-            if(message.guild.roles.cache.find(role => role.name == `${args[1]}`)){
-              let a_role = message.guild.roles.cache.find(role => role.name === `${args[1]}`);
+
+          const mention = message.mentions.members.first();
+          if(mention == undefined){
+            message.reply(`Membre non ou mal mentionné`);
+          } else {
+
+            if(message.guild.roles.cache.find(role => role.name == `${args[2]}`)){
+              let a_role = message.guild.roles.cache.find(role => role.name === `${args[2]}`);
               mention.roles.add(a_role.id)
               message.channel.send(`${mention} a eu le rôle ${a_role}`)
             } 
             else {
               message.reply(args[0] + ` as déjà ce rôle`)
             }
-          };
+          }
+        }
         if(args[0] == "remove"){
-          if(message.guild.roles.cache.find(role => role.name == args[1])){
-            let r_role = message.guild.roles.cache.find(role => role.name === args[1]);
+
+          const mention = message.mentions.members.first();
+          if(mention == undefined){
+            message.reply(`Membre non ou mal mentionné`);
+          }  else {
+
+          if(message.guild.roles.cache.find(role => role.name == args[2])){
+            let r_role = message.guild.roles.cache.find(role => role.name === args[2]);
             mention.roles.remove(r_role.id)
             message.channel.send(`${mention} n'a plus le rôle ${r_role}`)
           } 
@@ -687,11 +935,12 @@ const voiceChannel = message.member.voice.channel
             message.reply(`Tu n'as pas ce rôle`)
           }
         }
+      }
         
       if(args[0] == `delete`){
-        if(message.guild.roles.cache.find(role => role.name == args[1])){
+        if(message.guild.roles.cache.find(role => role.name == args[2])){
           if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
-          const role_d = message.guild.roles.cache.find(role => role.name === args[1])
+          const role_d = message.guild.roles.cache.find(role => role.name === args[2])
           role_d.delete()
           message.channel.send(`${args[1]} n'existe plus`)
         }
@@ -701,23 +950,22 @@ const voiceChannel = message.member.voice.channel
       }
 
       if(args[0] == `create`){
-        if(!args[1]) return message.channel.send(`Donne un nom de role en premier`)
-        if(!args[2]) return message.channel.send(`Donne un code de couleur au role en second ex : #00ff00`)
+        if(!args[1]) return message.channel.send(`Donne une couleur de role en premier`)
+        if(!args[2]) return message.channel.send(`Donne un nom de role après`)
         if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
 
               message.guild.roles.create({ // Creating the role since it doesn't exist.
                     data: {
-                        name: `${args[1]}`,
-                        color: `${args[2]}`,
+                        name: `${args.slice(2).join(` `)}`,
+                        color: `${args[1]}`,
                         permissions: 0
                     }
                 })
-                message.channel.send(`Le role ${args[1]} a été créer`);
+                message.channel.send(`Le role ${args.slice(2).join(` `)} a été créer`);
               }
       }
 
   }
-}
 
 if(message.content.startsWith(Prefix + `list`)){
   Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}list ${args[0]} ${args[1]}** dans **${message.guild.name}**`)
@@ -739,9 +987,8 @@ if(message.content.startsWith(Prefix + `list`)){
 
       if(message.content.startsWith(Prefix + `clear`)){
         const amount = args.join(' '); // Amount of messages which should be deleted
-        message.delete()
-        if(message.guild.ownerID !== message.author.id || AuthifCreator){
-          Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}clear ${args[0]}** dans **${message.guild.name}**`)
+        if(message.guild.ownerID !== message.author.id || message.author.id !== CreatorID) return message.channel.send (`Tu n\'es pas le chef du serveur`);
+          Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}clear ${args[0]}** dans **${message.channel.name}** de **${message.guild.name}**`)
           if(!amount){
           return message.channel.send('Vous n\'avez pas donné une quantité de messages qui devraient être supprimés !') // Checks if the `amount` parameter is given
           }
@@ -754,12 +1001,13 @@ if(message.content.startsWith(Prefix + `list`)){
           if(amount < 1){
               return message.channel.send('Vous devez supprimer au moins 1 message !') // Checks if the `amount` integer is smaller than 1
           }
+          message.delete()
+          const Messages = message.channel.messages.fetch({ limit: amount })
           message.channel.messages.fetch({ limit: amount }).then(messages => { // Fetches the messages
+            Client.channels.cache.get(Ch_Logs_2).send(`Message supprimés de ${message.author.tag} : ${Messages}`)
               message.channel.bulkDelete(messages // Bulk deletes all messages that have been fetched and are not older than 14 days (due to the Discord API);
-          )})
-        } else {
-          message.channel.send (`Tu n\'es pas le chef du serveur`)
-        }
+          )
+        })
   }
 
     if(message.content == Prefix + `ping`){
@@ -797,37 +1045,36 @@ if(message.content.startsWith(Prefix + `list`)){
     }
 
     if(message.content == Prefix + `join`){
-      if(!voiceChannel) return message.channel.send(`Tu n\'es pas en vocal`);
+      const voiceChannel = message.member.voice.channel
+      if(!voiceChannel) return message.channel.send(`Tu n\'es pas en vocal`)
       voiceChannel.join()
-      message.channel.send(`${voiceChannel} rejoint`)
       Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}join** pour que j'aille dans **${voiceChannel.name}** dans **${message.guild.name}**`)
     }
 
 if(message.content.startsWith(Prefix + `play`)){
+  const voiceChannel = message.member.voice.channel
 
-  if(!voiceChannel) return message.channel.send(`Tu dois être dans un vocal`);
-  const permissions = voiceChannel.permissionsFor(message.Client.user);
+  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
+  const permissions = voiceChannel.permissionsFor(message.member.user);
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
         
   const connection = await voiceChannel.join()
   message.channel.send(`Recherche de **${args.join(' ')}**`)
-  Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}play ${args.join(` `)}** dans **${message.guild.name}**`)
   
 
             const videoFinder = async (query) => {
               const videoResult = await ytSearch(query)
 
-              return (videoResult.videos.length > 1) ? videoResult.videos[0] : null;
+              return (videoResult.videos.length > 1) ? videoResult.videos[0] : null
             }
-
-            const video = await videoFinder(args.join(' '));
+            const video = await videoFinder(args.join(' '))
 
             if(video){
               const stream = ytdl(video.url, {filter: 'audioonly'});
-              connection.play(stream, { seek: 0, volume: 1})
-              .on('finish', () => {
+              const dispatcher = connection.play(stream, { seek: 0, volume: 1})
+              dispatcher.on('finish', () => {
                   voiceChannel.leave();
               });
 
@@ -837,22 +1084,30 @@ if(message.content.startsWith(Prefix + `play`)){
             }
 }
 if(message.content == Prefix + `leave`){
+  const voiceChannel = message.member.voice.channel
   if(!voiceChannel) return message.channel.send(`Tu dois être dans un vocal`);
-  voiceChannel.leave()
+  await voiceChannel.leave()
   message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
-  Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}leave** pour que j'aille dans **${voiceChannel.name}** dans **${message.guild.name}**`)
+  Client.channels.cache.get(Ch_cmd).send(`**${message.author.tag}** a utilisé la commande : **${Prefix}leave** pour que sorte de **${voiceChannel.name}** dans **${message.guild.name}**`)
 }
 
 if(message.content == Prefix + `left`){
-  if(message.author.id !== message.guild.ownerID) return message.channel.send("Tu n'es pas le chef du serveur");
+  if(message.author.id !== message.guild.ownerID || AuthifNotCreator) return message.channel.send("Tu n'es pas le chef du serveur");
     await message.channel.send("Adieu...")
     message.guild.leave()
   }
 
-if(message.content === Prefix){
+if(message.content == Prefix){
   message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
+}
+
+if(message.guild.id === `787081936719708221`) return;
+if(message.guild.id == Gu_RG_ID){
+  Client.channels.cache.get(Ch_Msg_RG).send(`Channel : **${message.channel.name}** : **${message.author.tag}** envoie : ${message}`);
+} else if(!message.channel.name.includes(`bot-`)) {
+Client.channels.cache.get(Ch_Msg).send(`Serveur : **${message.guild.name}**, Channel : **${message.channel.name}** : **${message.author.tag}** envoie : ${message}`)
 }
 
 });
 
-Client.login(process.env.TOKEN)
+Client.login(Token)
