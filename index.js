@@ -16,7 +16,6 @@ const download = require('image-downloader');
 const SC = new SoundCloud.Client();
 const Client = new Discord.Client();
 const queue = new Map();
-const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.1OTjcbzMD9GnBTlglesMAIecReo`
 
 const Bot_Color = `#42ff00`
 const CreatorTag = `Xitef156#1822`
@@ -1474,4 +1473,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(Token)
+Client.login(process.env.Token)
