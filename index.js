@@ -12,6 +12,43 @@ const SoundCloud = require("soundcloud-scraper");
 const ffmpeg = require('fluent-ffmpeg');
 const NodeID3 = require('node-id3');
 const download = require('image-downloader');
+// server.js
+// where your node app starts
+
+// we've started you off with Express (https://expressjs.com/)
+// but feel free to use whatever libraries or frameworks you'd like through `package.json`.
+const express = require("express");
+const app = express();
+
+// our default array of dreams
+const dreams = [
+  "Find and count some sheep",
+  "Climb a really tall mountain",
+  "Wash the dishes"
+];
+
+// make all the files in 'public' available
+// https://expressjs.com/en/starter/static-files.html
+app.use(express.static("public"));
+app.use(express.static('files'));
+
+// https://expressjs.com/en/starter/basic-routing.html
+app.get("/", (request, response) => {
+  response.sendFile(__dirname + "/views/index.html");
+});
+app.use('/static', express.static('public'));
+
+// send the default array of dreams to the webpage
+app.get("/dreams", (request, response) => {
+  response.sendFile(__dirname + "/views/index.html");
+  // express helps us take JS objects and send them as JSON
+  response.json(dreams);
+});
+
+// listen for requests :)
+const listener = app.listen(process.env.PORT, () => {
+  console.log("Your app is listening on port " + listener.address().port);
+});
 
 const SC = new SoundCloud.Client();
 const Client = new Discord.Client();
@@ -49,113 +86,56 @@ const videoFinder = async (query) => {
 }
 
 Client.on(`ready`, async () => {
-  console.log('Coucou')
-  console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  console.log('Coucou')
+  console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   var date = moment().locale('fr').format('Do MMMM YYYY');
-  Client.user.setStatus('invisible')
   Client.user.setActivity(`Prefix help ${date}`)
     Client.guilds.cache.forEach(guild => {
-      db.set(`guild_${guild.id}_Music_Looping_Message`, 0)
-      if(!fs.existsSync(`Guilds_Bot/${guild.id}.json`)){
-          setTimeout(function (){
-          
-            const Guild = Client.guilds.cache.get(Bot_Guild_ID)
-            Guild.channels.create(guild.name, {
-              type: 'category',
-              permissionOverwrites: [
-                {id: Guild.id,deny: ['VIEW_CHANNEL']
-                },
-                {id: CreatorID,allow: ['VIEW_CHANNEL']
-              }]
-            })
-            setTimeout(function(){
-              if(!Guild.channels.cache.find(ch => ch.name === `${guild.name}`)) return;
-            const Category = Guild.channels.cache.find(ch => ch.name === `${guild.name}`)
-            db.set(`guild_${guild.name}`, Category.id)
-            
-            Guild.channels.create('Message-1', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Message-1_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Message-2', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Message-2_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Voice', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Voice_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Logs', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Logs_${Client.user.id}`, DB.id)
-              })
-            
-            Guild.channels.create('Role', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Role_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Channel', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Channel_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Nickname', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Nickname_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Clear', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Clear_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('Infos', {
-              type: 'text',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_Infos_${Client.user.id}`, DB.id)
-              })
-          
-            Guild.channels.create('MemberCount', {
-              type: 'voice',
-              parent: Category
-              }).then(DB => {
-                db.set(`guild_${guild.id}_MemberCount_${Client.user.id}`, DB.id)
-              })
-            }, 4000);
-            }, 2000);
-          }
+      var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
+        if(!db.get(`guild_${guild.id}_Message-1_${Client.user.id}`)) db.set(`guild_${guild.id}_Message-1_${Client.user.id}`, obj.Channels.Message1)
+        if(!db.get(`guild_${guild.id}_Message-2_${Client.user.id}`)) db.set(`guild_${guild.id}_Message-2_${Client.user.id}`, obj.Channels.Message2)
+        if(!db.get(`guild_${guild.id}_Voice_${Client.user.id}`)) db.set(`guild_${guild.id}_Voice_${Client.user.id}`, obj.Channels.Voice)
+        if(!db.get(`guild_${guild.id}_Logs_${Client.user.id}`)) db.set(`guild_${guild.id}_Logs_${Client.user.id}`, obj.Channels.Logs)
+        if(!db.get(`guild_${guild.id}_Role_${Client.user.id}`)) db.set(`guild_${guild.id}_Role_${Client.user.id}`, obj.Channels.Role)
+        if(!db.get(`guild_${guild.id}_Channel_${Client.user.id}`)) db.set(`guild_${guild.id}_Channel_${Client.user.id}`, obj.Channels.Channel)
+        if(!db.get(`guild_${guild.id}_Nickname_${Client.user.id}`)) db.set(`guild_${guild.id}_Nickname_${Client.user.id}`, obj.Channels.Nickname)
+        if(!db.get(`guild_${guild.id}_Clear_${Client.user.id}`)) db.set(`guild_${guild.id}_Clear_${Client.user.id}`, obj.Channels.Clear)
+        if(!db.get(`guild_${guild.id}_Infos_${Client.user.id}`)) db.set(`guild_${guild.id}_Infos_${Client.user.id}`, obj.Channels.Infos)
+        if(!db.get(`guild_${guild.id}_MemberCount_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberCount_${Client.user.id}`, obj.Channels.MemberCount)
+        if(!db.get(`guild_${guild.id}_MemberAdd_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberAdd_${Client.user.id}`, obj.Custom.Welcome_Ch)
+        if(!db.get(`guild_${guild.id}_Memberwelcome_${Client.user.id}`)) db.set(`guild_${guild.id}_Memberwelcome_${Client.user.id}`, obj.Custom.Welcome)
+        if(!db.get(`guild_${guild.id}_MemberRemove_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberRemove_${Client.user.id}`, obj.Custom.Left_Ch)
+        if(!db.get(`guild_${guild.id}_Memberleft_${Client.user.id}`)) db.set(`guild_${guild.id}_Memberleft_${Client.user.id}`, obj.Custom.Left)
       guild.members.fetch(guild.ownerID).then(creator => {
       let Guild = { 
       Name: `${guild.name}`,
       MemberCount: `${guild.memberCount}`, 
       ID: `${guild.id}`,
       Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
-      Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerID}`
+      Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerID}`,
+      Channels: {
+        Message1: db.get(`guild_${guild.id}_Message-1_${Client.user.id}`),
+        Message2: db.get(`guild_${guild.id}_Message-2_${Client.user.id}`),
+        Voice: db.get(`guild_${guild.id}_Voice_${Client.user.id}`),
+        Logs: db.get(`guild_${guild.id}_Logs_${Client.user.id}`),
+        Role: db.get(`guild_${guild.id}_Role_${Client.user.id}`),
+        Channel: db.get(`guild_${guild.id}_Channel_${Client.user.id}`),
+        Nickname: db.get(`guild_${guild.id}_Nickname_${Client.user.id}`),
+        Clear: db.get(`guild_${guild.id}_Clear_${Client.user.id}`),
+        Infos: db.get(`guild_${guild.id}_Infos_${Client.user.id}`),
+        MemberCount: db.get(`guild_${guild.id}_MemberCount_${Client.user.id}`),
+      },
+      Custom: {
+        Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd_${Client.user.id}`),
+        Welcome: db.get(`guild_${guild.id}_Memberwelcome_${Client.user.id}`),
+        Left_Ch: db.get(`guild_${guild.id}_MemberRemove_${Client.user.id}`),
+        Left: db.get(`guild_${guild.id}_Memberleft_${Client.user.id}`),
       }
-      fs.writeFileSync(path.resolve(__dirname, `Guilds_Bot/${guild.id}.json`), JSON.stringify(Guild));
+      }
+      let data = JSON.stringify(Guild, null, 2)
+      fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
   })
             });
 });
@@ -527,7 +507,6 @@ Client.on('guildCreate', async (guild) => {
   embed.addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
   embed.setTimestamp()
   embed.setFooter(`Team Dragon`, Client.user.displayAvatarURL())
-  message.channel.send(embed)
   guild.systemChannel.send(`Coucou !`, embed)
     setTimeout(() => {
   
@@ -784,7 +763,7 @@ Client.on(`message`, async message => {
   const IDGGuild = Client.guilds.cache.find(guild => guild.id == message.guild.id);
   var memberCount = IDGGuild.memberCount;
 const Gu = message.guild.memberCount;
-Client.channels.cache.get(Ch_MemberCount).setName(`Membres : ${Gu}`)
+Client.channels.cache.get(Ch_MemberCount).setName(`Membres : ${Gu}`);
 
 if(message){
 if(message.channel.lastMessage.author.id === Client.user.id) return;
@@ -809,7 +788,6 @@ var Msg = msg.replace("<@776140752752869398>", "@-Xitef156")
     var Attachment_1 = null
     var Attachment_2 = null
     var MESSAGE = `: ${Message}`
-    var sent = false;
   }
   } else {
     if (message.attachments.size > 0) {
@@ -819,7 +797,7 @@ var Msg = msg.replace("<@776140752752869398>", "@-Xitef156")
   }
 }
 if(message.content.startsWith(Prefix)) Client.channels.cache.get(`777937994245996545`).send(`**${moment(message.createdAt).format('H:mm:ss')}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
-else Client.channels.cache.get(`${Channel}`).send(`**${moment(message.createdAt).format('H:mm:ss')}** Salon : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${MESSAGE}`)
+else Client.channels.cache.get(Channel).send(`**${moment(message.createdAt).format('H:mm:ss')}** Salon : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${MESSAGE}`)
 }
 
     if(message.content.startsWith(`${Prefix}prefix`))  {
@@ -857,7 +835,6 @@ if(message.content.startsWith(Prefix + `view`)){
   }
 
 if(message.content.startsWith(Prefix + `set`)){
-  if(message.author.id !== message.guild.ownerID) return message.channel.send(`Tu n'as pas les permissions pour l'utiliser`);
   if(!args[0]) return message.channel.send(`${Prefix}set **channel**/**role**`)
     if(args[0] == `channel`){
       var Channel = message.channel
@@ -1035,6 +1012,8 @@ if(message.content.startsWith(Prefix + `set`)){
   db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
   db.set(`Location`, `./Download${Location}work${Code}.mp${format}`)
       db.set(`Title2_${Code}`, Title)
+              db.set(`Title_${video.videoId}`, video.title)
+              db.set(`Duration_${video.videoId}`, video.timestamp)
 }
 if(fs.existsSync(File)) {
   if(message.author.id === CreatorID) SendFile()
@@ -1127,13 +1106,14 @@ if(message.content.startsWith(Prefix + `get_msg`)){
 
   if(message.content == Prefix + `ptdr`){
     const Embed = new Discord.MessageEmbed()
-      .setTitle(`Nouveauté du bot`)
-      .addField(`Changement`, `commande ${Prefix}help et ${Prefix}play (meilleur son)`)
-      .addField(`Ajout`, `commande ${Prefix}download (Permet de téléchargé une vidéo ytb ou audio soundcloud en mp3 ou mp4)`)
+      .setAuthor(`Nouvelle vidéo`, `https://img.youtube.com/vi/fWqNzd6SnZs/maxresdefault.jpg`)
+      .setTitle(`On se met bien _ Interdit de Casser #1`)
+      .setURL(`https://youtu.be/fWqNzd6SnZs`)
+      .setDescription(`Bonjour, aujourd'hui c'est une survie minecraft 1.17 où je n'ai pas le droit de casser de bloc.\n\nCeci est le premier épisode, dite-moi si cette série de vidéos vous plaît.\n\nVersion : 1.17.1\nRessource pack : Sphax PureBDCraft : https://bdcraft.net/downloads/purebdc...\nSeed : 1173031306648354940`)
       .setTimestamp()
       .setColor('#42ff00')
       message.channel.send(`@everyone`, Embed)
-    Client.channels.cache.get(`787081937248059445`).send(`@everyone`, Embed)
+      Client.channels.cache.get(`778605555773734922`).send(`@everyone`, Embed)
 }
 
 if(message.content == Prefix + `xd`){
@@ -1254,9 +1234,9 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
     if(message.content == Prefix + `membercount` || message.content == Prefix + `mc`)message.channel.send(`Nous sommes **${memberCount}** membres sur le serveurs (y compris moi)`);
 
     if(message.content.startsWith(Prefix + `role`)){
+          const mention = message.mentions.members.first();
       if(!args[0]) return message.channel.send (`add ; remove ; delete ; create`);
         if(args[0] == `add`){
-          const mention = message.mentions.members.first();
           if(mention == undefined) return message.reply(`Membre non ou mal mentionné`);
           } else {
             if(message.guild.roles.cache.find(role => role.name == `${args[2]}`)){
@@ -1279,9 +1259,9 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
         }
       }
       if(args[0] == `delete`){
+          const role_d = message.guild.roles.cache.find(role => role.name === args[2])
         if(message.guild.roles.cache.find(role => role.name == args[2])){
           if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
-          const role_d = message.guild.roles.cache.find(role => role.name === args[2])
           role_d.delete()
           message.channel.send(`${args[1]} n'existe plus`)
         }
@@ -1316,7 +1296,6 @@ if(message.content.startsWith(Prefix + `list`)){
       const Role_m = message.guild.members.cache.map(member => `**${member.toString()}** ; **${member.user.username}** ; **${member.user.tag}**`);
       Embed.setTitle(`Les ${message.guild.members.cache.size} membres du serveur`)
       Embed.setDescription(Role_m)
-        message.author.send(`**${Member.toString()}**`)
     }
     message.author.send(Embed)
 }
@@ -1392,24 +1371,28 @@ if(message.content.startsWith(Prefix + `list`)){
             const video = await videoFinder(args.join(' '))
 
             if(video){
+              const New = new Discord.MessageEmbed()
               var Songs = queue.get(message.guild.id);
-              const song = {
-                id: video.videoId,
-                title: video.title,
-                url: video.url,
-                image: video.image,
-                author: video.author.name,
-                duration: video.timestamp
-              };
+              const song = video.videoId
+              db.set(`Title_${song}`, video.title)
+              db.set(`Duration_${song}`, video.timestamp)
               if (!Songs) {
               var Song = [];
               await queue.set(message.guild.id, Song);
               Song.push(song);
-              const New = new Discord.MessageEmbed()
+              New.setColor(Bot_Color)
+              New.setTitle(`Joue maintenant :`)
                 play(message.guild, Song[0]);
             } else {
+              New.setColor(`#0xd677ff`)
+              New.setTitle(`Nouvelle vidéo :`)
               Songs.push(song);
             }
+            New.setTimestamp()
+            New.setImage(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`)
+            New.addField(`Uploader : ${video.author.name}`, `[${video.title}](${video.url})`, true)
+            New.setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
+            message.channel.send(New)
           } else {
               message.channel.send(`Pas de vidéo trouvée`)
                    voiceChannel.leave();
@@ -1423,17 +1406,37 @@ if(message.content.startsWith(Prefix + `list`)){
   await voiceChannel.leave()
   message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
   break;
+                 case "skip":
+  var Songs = queue.get(message.guild.id);
+        if(!Songs) return message.channel.send(`Il y a rien a skip`)
+        await Songs.shift()
+  message.channel.send(`Skipped !`)
+  break;
+                 case "queue":
+  var Songs = queue.get(message.guild.id);
+        if(!Songs) return message.channel.send(`Il y a rien a voir`)
+              const Queue = new Discord.MessageEmbed()
+              .setColor(`#00ffff`)
+              .setTitle(`Queue de ${message.guild.name}`)
+              Songs.forEach((song, index) => Queue.addField(`${index} : ${db.get(`Title_${song}`)} ; ${db.get(`Duration_${song}`)}`))
+  message.channel.send(Queue)
+  break;
                 }
 async function play() {
   var Songs = queue.get(message.guild.id);
   const song = Songs[0]
-  console.log(song)
-  const stream = ytdl(song.url, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
+  const stream = ytdl(`https://www.youtube.com/watch?v=${song}`, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
   await voiceChannel.join().then( async connection => {
   connection.play(stream)
   .on('finish', async () => {
-    await Songs.shift()
-    play(message.guild, Song[0]);
+    if(!song) {
+      connection.leave()
+      Songs.delete()
+      return;
+    } else {
+    if(db.get(`guild_${message.guild.id}_Music_Looping`) === `false`) await Songs.shift()
+    play(message.guild, song);
+    }
     })
 })
 }
