@@ -14,5 +14,10 @@
     "weather-js": "^2.0.0",
     "yt-search": "^2.9.0",
     "ytdl-core": "^4.9.0"
-  }
+  },
+  "main": "index.js",
+  "engines": {
+  "start": node index.js,
+  "node" : "14.x.x"
+}
 }
