@@ -1,1 +1,25 @@
-{"Name":"Communauté Dragon","MemberCount":"8","ID":"776473077780840509","Logo":"https://cdn.discordapp.com/icons/776473077780840509/de8a0f54bee6d06213bc9645debf01fd.webp?size=4096","Owner":"Tag : Xitef156#1822 ; ID : 776140752752869398"}
+{
+  "Name": "Communauté Dragon",
+  "MemberCount": "8",
+  "ID": "776473077780840509",
+  "Logo": "https://cdn.discordapp.com/icons/776473077780840509/de8a0f54bee6d06213bc9645debf01fd.webp?size=4096",
+  "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Channels": {
+    "Message1": "868543399945465917",
+    "Message2": "868543401656729630",
+    "Voice": "868950275392679966",
+    "Logs": "868950275573047297",
+    "Role": "868950276126687263",
+    "Channel": "868950276772593665",
+    "Nickname": "868950277615665162",
+    "Clear": "868950278127386714",
+    "Infos": "868950278844592188",
+    "MemberCount": "868950279981244437"
+  },
+  "Custom": {
+    "Welcome_Ch": null,
+    "Welcome": null,
+    "Left_Ch": null,
+    "Left": null
+  }
+}

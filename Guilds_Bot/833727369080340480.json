@@ -1,1 +1,25 @@
-{"Name":"Le Zoo des Geeks","MemberCount":"18","ID":"833727369080340480","Logo":"https://cdn.discordapp.com/icons/833727369080340480/457a2be54c2dc69e09b672405deb51a3.webp?size=4096","Owner":"Tag : Xitef156#1822 ; ID : 776140752752869398"}
+{
+  "Name": "Le Zoo des Geeks",
+  "MemberCount": "18",
+  "ID": "833727369080340480",
+  "Logo": "https://cdn.discordapp.com/icons/833727369080340480/457a2be54c2dc69e09b672405deb51a3.webp?size=4096",
+  "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Channels": {
+    "Message1": "868543460934844457",
+    "Message2": "868543463413678100",
+    "Voice": "868950301439328286",
+    "Logs": "868950302353666058",
+    "Role": "868950303033155674",
+    "Channel": "868950303670665246",
+    "Nickname": "868950304421462027",
+    "Clear": "868950305130283058",
+    "Infos": "868950305948184687",
+    "MemberCount": "868950306912862278"
+  },
+  "Custom": {
+    "Welcome_Ch": "833730314492837929",
+    "Welcome": "On",
+    "Left_Ch": "833730565530189834",
+    "Left": "On"
+  }
+}

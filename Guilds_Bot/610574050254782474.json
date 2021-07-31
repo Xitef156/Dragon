@@ -1,1 +1,25 @@
-{"Name":"Doggo Army","MemberCount":"33","ID":"610574050254782474","Logo":"https://cdn.discordapp.com/icons/610574050254782474/f2840c2a4cc3755394582a40565f0104.webp?size=4096","Owner":"Tag : エレク 𝑬𝒍𝒆𝒄𝒕𝒓𝒐クトロ#9110 ; ID : 597460045470367745"}
+{
+  "Name": "Doggo Army",
+  "MemberCount": "33",
+  "ID": "610574050254782474",
+  "Logo": "https://cdn.discordapp.com/icons/610574050254782474/f2840c2a4cc3755394582a40565f0104.webp?size=4096",
+  "Owner": "Tag : エレク 𝑬𝒍𝒆𝒄𝒕𝒓𝒐クトロ#9110 ; ID : 597460045470367745",
+  "Channels": {
+    "Message1": "868543349521526824",
+    "Message2": "868543357088047155",
+    "Voice": "868950261601800212",
+    "Logs": "868950262230966302",
+    "Role": "868950263120138281",
+    "Channel": "868950264030302208",
+    "Nickname": "868950264948854804",
+    "Clear": "868950265582198784",
+    "Infos": "868950266442051595",
+    "MemberCount": "868950267222192138"
+  },
+  "Custom": {
+    "Welcome_Ch": null,
+    "Welcome": null,
+    "Left_Ch": null,
+    "Left": null
+  }
+}
