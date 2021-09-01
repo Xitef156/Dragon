@@ -1,12 +1,14 @@
 {
   "Name": "La Résidence des Geeks",
-  "MemberCount": "40",
+  "MemberCount": "42",
   "ID": "687720397638336550",
   "Logo": "https://cdn.discordapp.com/icons/687720397638336550/3e7e4fd935699395c7f6406fbb2e9a1d.webp?size=4096",
   "Owner": "Tag : Bilbot xixi#2683 ; ID : 404215320849678348",
+  "Prefix": null,
+  "Category": null,
   "Channels": {
-    "Message1": "868543375945637918",
-    "Message2": "868543377724022836",
+    "Message1": "868950268044259329",
+    "Message2": "868950268715360366",
     "Voice": "868950269424189470",
     "Logs": "868950270036553748",
     "Role": "868950271127089192",

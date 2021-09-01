@@ -1,73 +1,66 @@
-const Discord = require(`discord.js`);
-require(`@discordjs/opus`)
-const ytdl = require(`ytdl-core`);
-const ytSearch = require(`yt-search`);
-const Canvas = require(`canvas`);
+const Discord = require('discord.js');require('@discordjs/opus');const Voice = require('@discordjs/voice');
+require('opusscript');require('libsodium-wrappers');require('tweetnacl');
+const ytdl = require('ytdl-core');
+const ytSearch = require('yt-search');
+const Canvas = require('canvas');
 const weather = require('weather-js');
 const db = require('quick.db');
-const moment = require('moment')
-const fs = require(`fs`)
-const path = require('path');
-const SoundCloud = require("soundcloud-scraper");
+const moment = require('moment');
+const fs = require('fs');
+const SoundCloud = require('soundcloud-scraper');
 const ffmpeg = require('fluent-ffmpeg');
 const NodeID3 = require('node-id3');
-const download = require('image-downloader');
-// server.js
-// where your node app starts
-
-// we've started you off with Express (https://expressjs.com/)
-// but feel free to use whatever libraries or frameworks you'd like through `package.json`.
-const express = require("express");
-const app = express();
-
-// our default array of dreams
-const dreams = [
-  "Find and count some sheep",
-  "Climb a really tall mountain",
-  "Wash the dishes"
-];
-
-// make all the files in 'public' available
-// https://expressjs.com/en/starter/static-files.html
-app.use(express.static("public"));
-app.use(express.static('files'));
-
-// https://expressjs.com/en/starter/basic-routing.html
-app.get("/", (request, response) => {
-  response.sendFile(__dirname + "/views/index.html");
-});
-app.use('/static', express.static('public'));
-
-// send the default array of dreams to the webpage
-app.get("/dreams", (request, response) => {
-  response.sendFile(__dirname + "/views/index.html");
-  // express helps us take JS objects and send them as JSON
-  response.json(dreams);
-});
-
-// listen for requests :)
-const listener = app.listen(process.env.PORT, () => {
-  console.log("Your app is listening on port " + listener.address().port);
-});
-
+const ncu = require('npm-check-updates');
+const puppeteer = require('puppeteer');
+const path = require('path');
+var Download = require('image-downloader');
 const SC = new SoundCloud.Client();
-const Client = new Discord.Client();
+const Client = new Discord.Client({ intents: [
+  Discord.Intents.FLAGS.GUILDS,
+  Discord.Intents.FLAGS.GUILD_MESSAGES,
+  Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+  Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
+  Discord.Intents.FLAGS.DIRECT_MESSAGES,
+  Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+  Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING,
+  Discord.Intents.FLAGS.GUILD_MEMBERS,
+  Discord.Intents.FLAGS.GUILD_VOICE_STATES,
+  Discord.Intents.FLAGS.GUILD_BANS,
+  Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+  Discord.Intents.FLAGS.GUILD_INVITES,
+  Discord.Intents.FLAGS.GUILD_INTEGRATIONS,
+  Discord.Intents.FLAGS.GUILD_WEBHOOKS
+],
+makeCache: Discord.Options.cacheWithLimits({
+  MessageManager: 200, // This is default
+  PresenceManager: 1,
+  // Add more class names here
+}), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
+});
 const queue = new Map();
+const player = Voice.createAudioPlayer();player.setMaxListeners(3)
+const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.0P9GIG3G52UoEpe0oh3rZenqyCk`
 
 const Bot_Color = `#42ff00`
 const CreatorTag = `Xitef156#1822`
-const CreatorID = `776140752752869398`
+const CreatorID = 776140752752869398
 const Charlotte_Tag = `charlotte_lbc#8842`
 const AuthifCreator = `message.author.id === ${CreatorID}`
 const AuthifNotCreator = `message.author.id !== ${CreatorID}`
-const Youtube_Guild_ID = `776473077780840509`
-const Bot_Guild_ID = `850033010350096414`
-const Ch_Err = `834751451090911292`
+const Youtube_Guild_ID = 776473077780840509
+const Hack_Guild_ID = 880444663914459166
+const Bot_Guild_ID = 850033010350096414
+const Ch_Err = 834751451090911292
+const Ch_Cmd = 777937994245996545
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
-const Font = `Vermin Verile`
+const Font = 'Vermin Vibes'
+const { registerFont } = require(`canvas`);
+registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
-var Font_Size = 50
-var Font_Size_2 = 20
+const Font_Size_max = 80
+const Font_Size_min = 50
+const Canvas_Larg = 700
+const Canvas_Haut = 250
 
 function makeid(length) {
   var result           = '';
@@ -76,62 +69,239 @@ function makeid(length) {
   for ( var i = 0; i < length; i++ ) result += characters.charAt(Math.floor(Math.random() * charactersLength));
  return result;
 }
-function getFilesizeInBytes(filename) { return fs.statSync(filename).size }
+async function getFilesizeInBytes(filename) { 
+  var File = await fs.statSync(filename)
+  var Size = File.size
+  return Size;
+}
 
-function remSpCh(sentence) { return sentence.replace(/[&\/\\#,+()$~%.'":*?<>{}|]/gi, '') }
+async function play(guild) {
+  var Songs = queue.get(guild.id);
+  var song = Songs[0];
+  function replay() {
+  const audio = ytdl(`https://youtu.be/${song.id}`, { volume: db.get(`guild_${guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
+  const stream = Voice.createAudioResource(audio)
+  player.setMaxListeners(player.listenerCount() + 1)
+    player.play(stream);
+    player.on(Voice.AudioPlayerStatus.Idle, async () => {
+      if(db.get(`guild_${guild.id}_Music_Looping`) === true) return play(guild);
+      else {
+        await Songs.shift();
+  if (!Songs[0]) {
+    Voice.getVoiceConnection(guild.id).disconnect();
+    queue.delete(guild.id);
+    return;
+  } else play(guild);
+}
+    })
+  }
+  replay()
+}
 
-const videoFinder = async (query) => {
-  const videoResult = await ytSearch(query)
-  return (videoResult.videos.length > 1) ? videoResult.videos[0] : null
+function remSpCh(sentence) {
+  var res = sentence;
+  var result = res.replace(/[&\/\\#,+()$~%.'":*?<>{}|]/gi, '');
+  return result;
+}
+
+function sleep(s) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, (s * 1000));
+  });
+}
+
+function youtube_parser(url){
+  var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  var match = url.match(regExp);
+  return (match&&match[7].length==11)? match[7] : url;
+}
+
+const videoFinder = async (search) => {
+  var search = await youtube_parser(search)
+  if(search.length === 11) var videoResult1 = await ytSearch({ videoId: search })
+  else var videoResult2 = await ytSearch({ query: search })
+  if(videoResult1) return videoResult1
+  else return videoResult2.videos[0];
+}
+
+async function mdr() {
+  var Code = await makeid(5)
+  var File = `${Code}.png`
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1920, height: 1080});
+  await page.goto('https://voiranime.com/anime/hunter-x-hunter-2011-vf/hunter-x-hunter-001-vf/');
+  await page.evaluate(async() => {
+    await new Promise(function(resolve) { 
+           setTimeout(resolve, 1000)
+    });
+});
+  await page.screenshot({ path: File, fullPage: true });
+  await browser.close();
+  await fs.renameSync(File, `./MDR/${File}`)
+  console.log(`Finish`)
+  mdr()
+}
+
+async function Message(message){
+  const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
+
+  if(message.author.tag == CreatorTag)var User = CreatorTag
+  else var User = `${message.author.toString()} (**${message.author.tag}**)`
+    const Ch_Msg_1 = db.get(`guild_${message.guild.id}_Message-1`)
+    if(message.content === `!xptdr`) return;
+    if(message.author.id === Client.user.id && message.content.startsWith(`**`)) return;
+    const Time = moment(message.createdAt).format('H:mm:ss')
+  var msg = message.content.replace("<@!688327045129699400>", "@-Charlotte")
+  var Msg = msg.replace("<@!776140752752869398>", "@-Xitef156")
+  var msg = Msg.replace("<@688327045129699400>", "@-Charlotte")
+  var Msg = msg.replace("<@776140752752869398>", "@-Xitef156")
+    var Message = Msg.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
+    if(message.channel.id === Ch_Err) return;
+    if(message.channel.id === 840923591460651008) return;
+    if(message.channel.id === Ch_Cmd) return;
+    if(message.channel.type == 'GUILD_PUBLIC_THREAD' || message.channel.type == 'GUILD_PRIVATE_THREAD') var Channel_Type = `Fil`
+    else var Channel_Type = `Salon`
+    async function CHANN() {
+    if(message.channel.type == 'DM') var Chan = await 847579263988531210
+    else if(message.guild.id === 787081936719708221) var Chan = await 871919663670517780
+    else if(!Chan && Ch_Msg_1 !== 868950307848200202) var Chan = await Ch_Msg_1
+    if(!Chan) CHANN();
+    else return Chan;
+    }
+    const Channel = await CHANN();
+    async function check() {
+      if(!Channel) CHANN();
+      else {
+    if(message.guild.id === Bot_Guild_ID && !message.content.startsWith(Prefix)) return;
+      if (message.attachments.size > 0) {
+        var Attachment_1 = message.attachments
+        var Attachment_2 = `comme fichier : [ ${Attachment_1.map(att => `${att.name} : ${att.size / 1000}Ko ${att.url}`).join(` ; `)} ]`
+    } else var Attachment_2 = ``
+    if (message.embeds.length > 0) {
+      const Embeds = new Map();
+      const Embed = {
+        embeds: []
+      }
+      Embeds.set(Client.user.id, Embed);
+      const map = Embeds.get(Client.user.id)
+      var Embeds_1 = message.embeds
+      Embeds_1.forEach(embed => {
+      if(embed.title) var Title = `\nTitre : ${embed.title}`
+      if(embed.author) var Aut = `\nAuteur : ${embed.author.name}`
+      if(embed.hexColor) var Color = `\nCouleur : ${embed.hexColor}`
+      if(embed.description) var Desc = "\nDescription : ```" + embed.description + "```"
+      if(embed.fields.length > 1) var Fields = `\nFields : [ ${embed.fields.map(field => `Nom : ${field.name}, Valeur : ${field.value}, Inline : ${field.inline}`)} ]`
+      if(embed.timestamp) var Time = `\nHeure : ${moment(embed.timestamp).format(`Do:MM:YYYY H:mm:ss`)}`
+      if(embed.footer !== null) var Foot = `\nFooter : ${embed.footer}`
+      if(embed.image) var Img = `\nImage : ${embed.image.url}`
+      if(embed.thumbnail !== null) var Minia = `\nMiniature : ${embed.thumbnail}`
+      if(embed.video) var Vid = `\nVideo : ${embed.video}`
+      Embed.embeds.push(`${Title || ``}${Aut || ``}${Color || ``}${Desc || ``}${Fields || ``}${Time || ``}${Foot || ``}${Img || ``}${Minia || ``}${Vid || ``}`)
+    })
+      var Embeds_3 = `comme embeds : [ ${map.embeds.join(`\n ------------------------------------------------ \n`)} ]`
+  } else var Embeds_3 = ``
+  if(message.content !== ``)var Message = message.content
+  else var Message = ``
+  if(Message && Embeds_3) var and1 = ` et `
+  if(Message && Attachment_2) var and1 = ` et `
+  if(Embeds_3 && Attachment_2) var and2 = ` et `
+    if(message.content.startsWith(Prefix)) Client.channels.cache.get(Ch_Cmd).send(`**${Time}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
+    Client.channels.cache.get(Channel).send(`**${Time}** ${Channel_Type} : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`)
+      }
+      check();
+    }
+  }
+
+function reset(guild) {
+  db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
+  db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
+  db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
+  db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
+  db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
+  db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
+  db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
+  db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
+  db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
+  db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
+  db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
+  db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
+  db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
+  db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
+  db.set(`guild_${guild.id}_prefix`, obj.Prefix)
+}
+
+async function server(ip, func) {
+    const Survival = {'ip': 'ult4.falix.gg:26400', 'name': 'Elite Survival', 'id': 'e66d7eb1-a9f1-4a7b-803a-f40ae2a0a4b9'}
+    const Creative = {'ip': 'ult9.falix.gg:18867', 'name': 'Créatif', 'id': 'baa3503f-b2d7-4e39-88aa-400a3a15cdd0'}
+    const Bot = {'ip': 'ult5.falix.gg:26698', 'name': 'Dragon Bot', 'id': '0cc16658-c41e-40d5-a923-1b35403582fa'}
+    if(ip.includes('ult4') || ip.includes('lite') || ip.includes('Surv') || ip.includes('surv') || ip.includes('e66d7eb1-a9f1-4a7b-803a-f40ae2a0a4b9')) var ID = Survival
+    else if(ip.includes('ult9') || ip.includes('Créa') || ip.includes('créa') || ip.includes('Crea') || ip.includes('crea') || ip.includes('baa3503f-b2d7-4e39-88aa-400a3a15cdd0')) var ID = Creative
+    else if(ip.includes('ult5') || ip.includes('Drag') || ip.includes('Bot') || ip.includes('drag') || ip.includes('bot') || ip.includes('0cc16658-c41e-40d5-a923-1b35403582fa')) var ID = Bot
+    if(func.includes('pow') || func.includes('start') || func.includes('launch')) await client.startServer(ID.id)
+    else if(func.includes('rest') || func.includes('rel')) await client.restartServer(ID.id)
+    else if(func.includes('quit') || func.includes('kill') || func.includes('stop')) await client.stopServer(ID.id)
 }
 
 Client.on(`ready`, async () => {
+  const upgraded = await ncu.run({
+      packageFile: './package.json',
+      upgrade: true,
+    })
+    console.log(upgraded);
   var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
-  var date = moment().locale('fr').format('Do MMMM YYYY');
+  var date = moment().format('Do MMMM YYYY');
   Client.user.setActivity(`Prefix help ${date}`)
-    Client.guilds.cache.forEach(guild => {
+    await Client.guilds.cache.forEach(async guild => {
+      if(fs.existsSync(`./Guilds_Bot/${guild.id}.json`)){
       var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
-        if(!db.get(`guild_${guild.id}_Message-1_${Client.user.id}`)) db.set(`guild_${guild.id}_Message-1_${Client.user.id}`, obj.Channels.Message1)
-        if(!db.get(`guild_${guild.id}_Message-2_${Client.user.id}`)) db.set(`guild_${guild.id}_Message-2_${Client.user.id}`, obj.Channels.Message2)
-        if(!db.get(`guild_${guild.id}_Voice_${Client.user.id}`)) db.set(`guild_${guild.id}_Voice_${Client.user.id}`, obj.Channels.Voice)
-        if(!db.get(`guild_${guild.id}_Logs_${Client.user.id}`)) db.set(`guild_${guild.id}_Logs_${Client.user.id}`, obj.Channels.Logs)
-        if(!db.get(`guild_${guild.id}_Role_${Client.user.id}`)) db.set(`guild_${guild.id}_Role_${Client.user.id}`, obj.Channels.Role)
-        if(!db.get(`guild_${guild.id}_Channel_${Client.user.id}`)) db.set(`guild_${guild.id}_Channel_${Client.user.id}`, obj.Channels.Channel)
-        if(!db.get(`guild_${guild.id}_Nickname_${Client.user.id}`)) db.set(`guild_${guild.id}_Nickname_${Client.user.id}`, obj.Channels.Nickname)
-        if(!db.get(`guild_${guild.id}_Clear_${Client.user.id}`)) db.set(`guild_${guild.id}_Clear_${Client.user.id}`, obj.Channels.Clear)
-        if(!db.get(`guild_${guild.id}_Infos_${Client.user.id}`)) db.set(`guild_${guild.id}_Infos_${Client.user.id}`, obj.Channels.Infos)
-        if(!db.get(`guild_${guild.id}_MemberCount_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberCount_${Client.user.id}`, obj.Channels.MemberCount)
-        if(!db.get(`guild_${guild.id}_MemberAdd_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberAdd_${Client.user.id}`, obj.Custom.Welcome_Ch)
-        if(!db.get(`guild_${guild.id}_Memberwelcome_${Client.user.id}`)) db.set(`guild_${guild.id}_Memberwelcome_${Client.user.id}`, obj.Custom.Welcome)
-        if(!db.get(`guild_${guild.id}_MemberRemove_${Client.user.id}`)) db.set(`guild_${guild.id}_MemberRemove_${Client.user.id}`, obj.Custom.Left_Ch)
-        if(!db.get(`guild_${guild.id}_Memberleft_${Client.user.id}`)) db.set(`guild_${guild.id}_Memberleft_${Client.user.id}`, obj.Custom.Left)
-      guild.members.fetch(guild.ownerID).then(creator => {
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
+        if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
+        if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
+        if(count == 3 && !db.get(`guild_${guild.id}_Voice`)) db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
+        if(count == 4 && !db.get(`guild_${guild.id}_Logs`)) db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
+        if(count == 5 && !db.get(`guild_${guild.id}_Role`)) db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
+        if(count == 6 && !db.get(`guild_${guild.id}_Channel`)) db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
+        if(count == 7 && !db.get(`guild_${guild.id}_Nickname`)) db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
+        if(count == 8 && !db.get(`guild_${guild.id}_Clear`)) db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
+        if(count == 9 && !db.get(`guild_${guild.id}_Infos`)) db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
+        if(count == 10 && !db.get(`guild_${guild.id}_MemberCount`)) db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
+        if(count == 11 && !db.get(`guild_${guild.id}_MemberAdd`)) db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
+        if(count == 12 && !db.get(`guild_${guild.id}_Memberwelcome`)) db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
+        if(count == 13 && !db.get(`guild_${guild.id}_MemberRemove`)) db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
+        if(count == 14 && !db.get(`guild_${guild.id}_Memberleft`)) db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
+        if(count == 15 && !db.get(`guild_${guild.id}_prefix`) && obj.Prefix !== null) db.set(`guild_${guild.id}_prefix`, obj.Prefix)
+      })
+    }
+      guild.fetchOwner().then(creator => {
       let Guild = { 
       Name: `${guild.name}`,
       MemberCount: `${guild.memberCount}`, 
       ID: `${guild.id}`,
       Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
-      Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerID}`,
+      Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerId}`,
+      Prefix: db.get(`guild_${guild.id}_prefix`),
+      Category: db.get(`guild_${guild.id}_Category`),
       Channels: {
-        Message1: db.get(`guild_${guild.id}_Message-1_${Client.user.id}`),
-        Message2: db.get(`guild_${guild.id}_Message-2_${Client.user.id}`),
-        Voice: db.get(`guild_${guild.id}_Voice_${Client.user.id}`),
-        Logs: db.get(`guild_${guild.id}_Logs_${Client.user.id}`),
-        Role: db.get(`guild_${guild.id}_Role_${Client.user.id}`),
-        Channel: db.get(`guild_${guild.id}_Channel_${Client.user.id}`),
-        Nickname: db.get(`guild_${guild.id}_Nickname_${Client.user.id}`),
-        Clear: db.get(`guild_${guild.id}_Clear_${Client.user.id}`),
-        Infos: db.get(`guild_${guild.id}_Infos_${Client.user.id}`),
-        MemberCount: db.get(`guild_${guild.id}_MemberCount_${Client.user.id}`),
+        Message1: db.get(`guild_${guild.id}_Message-1`),
+        Message2: db.get(`guild_${guild.id}_Message-2`),
+        Voice: db.get(`guild_${guild.id}_Voice`),
+        Logs: db.get(`guild_${guild.id}_Logs`),
+        Role: db.get(`guild_${guild.id}_Role`),
+        Channel: db.get(`guild_${guild.id}_Channel`),
+        Nickname: db.get(`guild_${guild.id}_Nickname`),
+        Clear: db.get(`guild_${guild.id}_Clear`),
+        Infos: db.get(`guild_${guild.id}_Infos`),
+        MemberCount: db.get(`guild_${guild.id}_MemberCount`),
       },
       Custom: {
-        Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd_${Client.user.id}`),
-        Welcome: db.get(`guild_${guild.id}_Memberwelcome_${Client.user.id}`),
-        Left_Ch: db.get(`guild_${guild.id}_MemberRemove_${Client.user.id}`),
-        Left: db.get(`guild_${guild.id}_Memberleft_${Client.user.id}`),
+        Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd`),
+        Welcome: db.get(`guild_${guild.id}_Memberwelcome`),
+        Left_Ch: db.get(`guild_${guild.id}_MemberRemove`),
+        Left: db.get(`guild_${guild.id}_Memberleft`),
       }
       }
       let data = JSON.stringify(Guild, null, 2)
@@ -140,57 +310,59 @@ Client.on(`ready`, async () => {
             });
 });
 
-process.on('unhandledRejection', error => {
-  Client.channels.cache.get(Ch_Err).send(`**${moment().locale('fr').format('H:mm:ss')}** Erreur : ${error}`);
-  console.log(`\x1b[31m\x1b[1m${error}`);
+process.on('uncaughtException', error => {
   console.log(error)
 });
 
-Client.on(`voiceStateUpdate`, async (oldState, newState) => { // Listeing to the voiceStateUpdate event
-  const Ch_Voice = db.get(`guild_${oldState.guild.id}_Voice_${Client.user.id}`)
+Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the voiceStateUpdate event
+  const Ch_Voice = db.get(`guild_${oldState.guild.id}_Voice`)
   var User = `${oldState.member.toString()} (**${oldState.member.user.tag}**)`
   if(newState.member.id == `688327045129699400`) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.member.id == CreatorID) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.channel === null) {                                         // Disconnect
     var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
-  Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} déconnecté à ${oldChannel}.`);
+  Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} déconnecté à ${oldChannel}.`);
   } else if(oldState.channel === null){                                   // Connect
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} connecté à ${newChannel}.`);
+    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} connecté à ${newChannel}.`);
   } else if (oldState.selfDeaf === false && newState.selfDeaf === true) { // Sourdine
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} s'est mit en sourdine dans ${newChannel}.`);
+    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est mit en sourdine dans ${newChannel}.`);
   } else if (oldState.selfDeaf === true && newState.selfDeaf === false) { // Dé-sourdine
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} n'est plus en sourdine dans ${newChannel}.`);
+    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} n'est plus en sourdine dans ${newChannel}.`);
   } else if (oldState.selfMute === false && newState.selfMute === true) { // Mute
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} s'est mute dans ${newChannel}.`);
+    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est mute dans ${newChannel}.`);
   } else if (oldState.selfMute === true && newState.selfMute === false) { // Dé-mute
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} s'est demute dans ${newChannel}.`);
+    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est demute dans ${newChannel}.`);
   } else if (oldState.channel !== newState.channel){                      // Move
     var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
     var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-  Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} à été move de ${oldChannel} à ${newChannel}.`);
+  Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} à été move de ${oldChannel} à ${newChannel}.`);
 } else {
   var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
   var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-      Client.channels.cache.get(Ch_Voice).send(`**${moment().locale('fr').format('H:mm:ss')}** ${User} est mute/demute dans ${oldChannel} à ${newChannel} par un admin.`);
+      Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} est mute/demute dans ${oldChannel} à ${newChannel} par un admin.`);
     }
 });
 
-Client.on(`channelCreate`, async (channel) => {
+Client.on('threadCreate', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil créer : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
+
+Client.on('threadDelete', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil détruit : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
+
+Client.on(`channelCreate`, async channel => {
   if(channel.type == 'dm') return;
-  const Ch_Channel = db.get(`guild_${channel.guild.id}_Channel_${Client.user.id}`)
+  const Ch_Channel = db.get(`guild_${channel.guild.id}_Channel`);
   Client.channels.cache.get(Ch_Channel).send(`**${moment(channel.createdAt).format('H:mm:ss')}** Salon crée : ${channel.toString()} (**${channel.name}**) dans la Catégorie : **${channel.parent.name}**`);
 });
 
-Client.on(`channelDelete`, async (channel) => Client.channels.cache.get(db.get(`guild_${channel.guild.id}_Channel_${Client.user.id}`)).send(`**${moment().locale('fr').format('H:mm:ss')}** Salon détruit : **${channel.name}** dans la Catégorie : **${channel.parent.name}**`));
+Client.on(`channelDelete`, async channel => Client.channels.cache.get(db.get(`guild_${channel.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Salon détruit : **${channel.name}** dans la Catégorie : **${channel.parent.name}**`));
 
 Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
-  const Ch_Nickname = db.get(`guild_${oldMember.guild.id}_Nickname_${Client.user.id}`)
-  const Ch_Role = db.get(`guild_${oldMember.guild.id}_Role_${Client.user.id}`)
+  const Ch_Nickname = db.get(`guild_${oldMember.guild.id}_Nickname`)
+  const Ch_Role = db.get(`guild_${oldMember.guild.id}_Role`)
   if(oldMember === newMember) return;
 
   if (oldMember.roles.cache.size > newMember.roles.cache.size) {
@@ -204,7 +376,7 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
             .addField(`Serveur`, newMember.guild.name)
             .setTimestamp()
             .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
-            Client.channels.cache.get(Ch_Role).send(Embed)
+            Client.channels.cache.get(Ch_Role).send({ embeds: [Embed]})
             return;
         }
     })
@@ -219,7 +391,7 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
             .addField(`Serveur`, newMember.guild.name)
             .setTimestamp()
             .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
-            Client.channels.cache.get(Ch_Role).send(Embed)
+            Client.channels.cache.get(Ch_Role).send({ embeds: [Embed]})
             return;
         }
     })
@@ -231,7 +403,7 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
     .setTimestamp()
     .setColor('#ffff00')
     .addField(`Nouveau Pseudo`, newMember.nickname)
-  Client.channels.cache.get(Ch_Nickname).send(membernewnicklog)
+  Client.channels.cache.get(Ch_Nickname).send({ embeds: [membernewnicklog]})
   return;
 } else if (oldMember.nickname && !newMember.nickname) {
   const memberremovenicklog = new Discord.MessageEmbed()
@@ -241,7 +413,7 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
     .setTimestamp()
     .setColor('#f04747')
     .addField(`Ancien Pseudo`, oldMember.nickname)
-  Client.channels.cache.get(Ch_Nickname).send(memberremovenicklog)
+  Client.channels.cache.get(Ch_Nickname).send({ embeds: [memberremovenicklog]})
   return;
 } else if (oldMember.nickname && newMember.nickname) {
   if(oldMember.nickname === newMember.nickname) return;
@@ -253,20 +425,23 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
     .setColor('#ff4500')
     .addField(`Avant`, oldMember.nickname)
     .addField(`Après`, newMember.nickname)
-  Client.channels.cache.get(Ch_Nickname).send(memberchangednicklog)
+  Client.channels.cache.get(Ch_Nickname).send({ embeds: [memberchangednicklog]})
 }
 });
 
 Client.on(`guildMemberAdd`, async member => {
+var Font_Size = Font_Size_max;
+var Font_Size_2 = Font_Size_min;
+  if(db.get(`guild_${member.guild.id}_MemberCount`)){
 
-  if(db.get(`guild_${member.guild.id}_MemberCount_${Client.user.id}`)){
-  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount_${Client.user.id}`)
+  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
   const Ch_mc = Client.channels.cache.get(Ch_MemberCount)
   const mc_guild = Client.guilds.cache.find(gui => gui.name == member.guild.name)
+
   var memberCount = mc_guild.memberCount;
   await Ch_mc.setName(`Membre : ${memberCount}`)
   }
-  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs_${Client.user.id}`)
+  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs`)
   Client.channels.cache.get(Ch_Logs).send(`**${moment(member.joinedAt).format('H:mm:ss')}** **${member.user.tag}** est arrivé dans **${member.guild.name}**`)
 
     const applyText = (canvas, text) => {
@@ -275,15 +450,20 @@ Client.on(`guildMemberAdd`, async member => {
         while (ctx.measureText(text).width > canvas.width - 300);
         return ctx.font;
     };
-    var Welcome = db.get(`guild_${member.guild.id}_Memberwelcome_${Client.user.id}`)
+
+    var Welcome = db.get(`guild_${member.guild.id}_Memberwelcome`)
     if(Welcome == `Off`) return;
     if(Welcome == `On`){
 
-    if(!db.get(`guild_${member.guild.id}_MemberAdd_${Client.user.id}`)) return;
-  const mdr = db.get(`guild_${member.guild.id}_MemberAdd_${Client.user.id}`)
-  const channel = await Client.channels.cache.find(ch => ch.id == mdr);
+    if(!db.get(`guild_${member.guild.id}_MemberAdd`)) return;
+  const mdr = db.get(`guild_${member.guild.id}_MemberAdd`)
+  const channel = Client.channels.cache.get(mdr);
+
 	if (!channel) return;
-	const canvas = Canvas.createCanvas(700, 250);
+
+  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) var attachment = `./Custom/Welcome/${member.id}.png`
+  else {
+	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
 	const background = await Canvas.loadImage('./wallpaper.png');
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
@@ -345,16 +525,20 @@ Client.on(`guildMemberAdd`, async member => {
 
 	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
 	ctx.drawImage(avatar, 25, 25, 200, 200);
+	var attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
+  console.log(canvas.toDataURL('image/png'))
+  fs.createWriteStream(canvas.toDataURL('image/png'), `./Custom/Welcome/${member.id}.png`)
+  }
 
-	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
-
-	channel.send(`Bienvenue dans le serveur, ${member}!`, attachment);
+	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
 }
 });
 
 Client.on(`guildMemberRemove`, async member => {
-  if(db.get(`guild_${member.guild.id}_MemberCount_${Client.user.id}`)){
-  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount_${Client.user.id}`)
+var Font_Size = Font_Size_max;
+var Font_Size_2 = Font_Size_min;
+  if(db.get(`guild_${member.guild.id}_MemberCount`)){
+  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
 
   const Ch_mc = Client.channels.cache.get(Ch_MemberCount)
   const mc_guild = Client.guilds.cache.find(gui => gui.name == member.guild.name)
@@ -363,19 +547,19 @@ Client.on(`guildMemberRemove`, async member => {
   }
 
   
-  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs_${Client.user.id}`)
+  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs`)
   const fetchedLogs = await member.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_KICK',
 	});
 	const kickLog = fetchedLogs.entries.first();
 
-	if (!kickLog) Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, très probablement de sa propre volonté.`);
+	if (!kickLog) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, très probablement de sa propre volonté.`);
 
 	const { executor, target } = kickLog;
 
-	if (target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${executor.tag}**`);
-	else Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, rien n'a été trouvé.`);
+	if (target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${executor.tag}**`);
+	else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, rien n'a été trouvé.`);
 
     const applyText = (canvas, text) => {
         const ctx = canvas.getContext('2d');
@@ -385,17 +569,19 @@ Client.on(`guildMemberRemove`, async member => {
     
         return ctx.font;
     };
-    var Left = db.get(`guild_${member.guild.id}_Memberleft_${Client.user.id}`)
+    var Left = db.get(`guild_${member.guild.id}_Memberleft`)
     if(Left == `Off`) return;
     if(Left == `On`){
 
-    if(!db.get(`guild_${member.guild.id}_MemberRemove_${Client.user.id}`)) return;
-  const mdr = db.get(`guild_${member.guild.id}_MemberRemove_${Client.user.id}`)
-  const channel = await Client.channels.cache.find(ch => ch.id == mdr);
+    if(!db.get(`guild_${member.guild.id}_MemberRemove`)) return;
+  const mdr = db.get(`guild_${member.guild.id}_MemberRemove`)
+  const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
+  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) var attachment = `./Custom/Left/${member.id}.png`
+  else {
 
-	const canvas = Canvas.createCanvas(700, 250);
+	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
 
 	const background = await Canvas.loadImage('./wallpaper 2.png');
@@ -460,45 +646,151 @@ Client.on(`guildMemberRemove`, async member => {
 	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
 	ctx.drawImage(avatar, 25, 25, 200, 200);
 
-	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
+	var attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'left-image.png');
+  fs.createWriteStream(`./Custom/Left/${member.id}.jpg`, canvas.toDataURL())
+  }
 
-	channel.send(`Au revoir, ${member}!`, attachment);
+	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
 }
 });
 
-Client.on('guildBanAdd', async (guild, user) => {
-  const Ch_Logs = db.get(`guild_${guild.id}_Logs_${Client.user.id}`)
+Client.on('guildBanAdd', async Ban => {
+  const guild = Ban.guild
+  const user = Ban.user
+  const Ch_Logs = db.get(`guild_${guild.id}_Logs`)
 	const fetchedLogs = await guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_BAN_ADD',
 	});
 	const banLog = fetchedLogs.entries.first();
   const banReason = fetchedLogs.entries.first().reason;
-	if (!banLog) Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${user.tag}** est banni de **${guild.name}** mais rien n'a pu être trouvé.`);
+	if (!banLog) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${user.tag}** est banni de **${guild.name}** mais rien n'a pu être trouvé.`);
 	const { executor, target } = banLog;
-	if (target.id === user.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${user.tag}** est ban de **${guild.name}** par **${executor.tag}**\nRaison : **${banReason}**`);
-	else Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${user.tag}** est ban de **${guild.name}**`);
+	if (target.id === user.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${user.tag}** est ban de **${guild.name}** par **${executor.tag}**\nRaison : **${banReason}**`);
+	else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${user.tag}** est ban de **${guild.name}**`);
 });
 
-Client.on(`guildBanRemove`, async (guild, user) => {
-  const Ch_Logs = db.get(`guild_${guild.id}_Logs_${Client.user.id}`)
-  if(guild.member(Client.user).hasPermission('VIEW_AUDIT_LOG')) {
+Client.on(`guildBanRemove`, async Ban => {
+  const guild = Ban.guild
+  const user = Ban.user
+  const Ch_Logs = db.get(`guild_${guild.id}_Logs`)
+  if(guild.me.permissionsIn().has('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_BAN_REMOVE',
 	})
 	const banLog = fetchedLogs.entries.first();
 	const { executor } = banLog;
-  Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${user.tag}** est débanni de par **${executor.tag}**`);
-} else {
-  Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${user.tag}** est débanni`);
-}
+  Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${user.tag}** est débanni de par **${executor.tag}**`);
+} else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${user.tag}** est débanni`);
 });
 
 Client.on('guildCreate', async (guild) => {
+  if(guild.id === (Bot_Guild_ID || Hack_Guild_ID)) return;
+      const Guild = Client.guilds.cache.get(Bot_Guild_ID)
+      if(!Client.channels.cache.find(cat => cat.type == 'GUILD_CATEGORY' && cat.id === db.get(`guild_${guild.id}_Category`)))
+      await Guild.channels.create(guild.name, {
+        type: 'GUILD_CATEGORY',
+        permissionOverwrites: [
+          {id: Guild.id,deny: ['VIEW_CHANNEL']
+          },
+          {id: CreatorID,allow: ['VIEW_CHANNEL']
+        }]
+      }).then(async Category => {
+      db.set(`guild_${guild.id}_Category`, Category.id)
+      
+      await Guild.channels.create('Message-1', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Message-1`, DB.id)
+        })
+    
+        await Guild.channels.create('Message-2', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Message-2`, DB.id)
+        })
+    
+        await Guild.channels.create('Voice', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Voice`, DB.id)
+        })
+    
+        await Guild.channels.create('Logs', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Logs`, DB.id)
+        })
+      
+        await Guild.channels.create('Role', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Role`, DB.id)
+        })
+    
+        await Guild.channels.create('Channel', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Channel`, DB.id)
+        })
+    
+        await Guild.channels.create('Nickname', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Nickname`, DB.id)
+        })
+    
+        await Guild.channels.create('Clear', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Clear`, DB.id)
+        })
+    
+        await Guild.channels.create('Invite', {
+        type: 'GUILD_TEXT',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_Invite`, DB.id)
+        })
+    
+        await Guild.channels.create('Infos', {
+          type: 'GUILD_TEXT',
+          parent: Category
+          }).then(DB => {
+            guild.members.fetch(guild.ownerId).then(creator => {
+            const Embed = new Discord.MessageEmbed()
+            Embed.setColor(Bot_Color)
+            Embed.addField(`Nom`, guild.name)
+            Embed.addField(`Icon`, guild.iconURL({size: 4096}))
+            Embed.setImage(guild.iconURL({size: 4096}))
+            Embed.addField(`Gérant`, creator.user.toString())
+            Embed.setFooter(`${guild.name}'s ID: ${guild.id}`)
+            Embed.setTimestamp()
+            DB.send({ embeds: [Embed] })
+            })
+            db.set(`guild_${guild.id}_Infos`, DB.id)
+          })
+    
+          await Guild.channels.create('MemberCount', {
+        type: 'GUILD_VOICE',
+        parent: Category
+        }).then(DB => {
+          db.set(`guild_${guild.id}_MemberCount`, DB.id)
+        })
+      })
+      
   const embed = new Discord.MessageEmbed()
   embed.setColor(`42ff00`)
-  embed.setAuthor(`Créateur : ${CreatorTag} ; ${Client.user.tag}`, `https://i.ibb.co/TwgW11w/Logo-Xitef156-2-5.png`)
+  embed.setAuthor(`Créateur : ${CreatorTag} ; ${Client.user.tag}`, Client.users.cache.get(CreatorID).displayAvatarURL({ dynamic: true, size: 4096 }))
   embed.setTitle(`Xitef156`)
   embed.setURL('https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA')
   embed.setDescription(`Regardez mes vidéos [Youtube](https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA)`)
@@ -507,127 +799,23 @@ Client.on('guildCreate', async (guild) => {
   embed.addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
   embed.setTimestamp()
   embed.setFooter(`Team Dragon`, Client.user.displayAvatarURL())
-  guild.systemChannel.send(`Coucou !`, embed)
-    setTimeout(() => {
-  
-      const Guild = Client.guilds.cache.get(Bot_Guild_ID)
-      Guild.channels.create(guild.name, {
-        type: 'category',
-        permissionOverwrites: [
-          {id: Guild.id,allow: ['VIEW_CHANNEL']
-          },
-          {id: CreatorID,allow: ['VIEW_CHANNEL']
-        }]
-      })
-      setTimeout(() => {
-        if(!Guild.channels.cache.find(ch => ch.name === `${guild.name}`)) return;
-      const Category = Guild.channels.cache.find(ch => ch.name === `${guild.name}`)
-      db.set(`guild_${guild.name}_Category_${Client.user.id}`, Category.id)
-      
-      Guild.channels.create('Message-1', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Message-1_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Message-2', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Message-2_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Voice', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Voice_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Logs', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Logs_${Client.user.id}`, DB.id)
-        })
-      
-      Guild.channels.create('Role', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Role_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Channel', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Channel_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Nickname', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Nickname_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Clear', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Clear_${Client.user.id}`, DB.id)
-        })
-    
-      Guild.channels.create('Invite', {
-        type: 'text',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_Invite_${Client.user.id}`, DB.id)
-        })
-    
-        Guild.channels.create('Infos', {
-          type: 'text',
-          parent: Category
-          }).then(DB => {
-            guild.members.fetch(guild.ownerID).then(creator => {
-            const Embed = new Discord.MessageEmbed()
-            Embed.setColor('#42ff00')
-            Embed.addField(`Nom`, guild.name)
-            Embed.addField(`Icon`, guild.iconURL({size: 4096}))
-            Embed.setImage(guild.iconURL({size: 4096}))
-            Embed.addField(`Gérant`, creator.user.toString())
-            Embed.setFooter(`${guild.name}'s ID: ${guild.id}`)
-            Embed.setTimestamp()
-            DB.send(Embed_2)
-            })
-            db.set(`guild_${guild.id}_Infos_${Client.user.id}`, DB.id)
-          })
-    
-      Guild.channels.create('MemberCount', {
-        type: 'voice',
-        parent: Category
-        }).then(DB => {
-          db.set(`guild_${guild.id}_MemberCount_${Client.user.id}`, DB.id)
-        })
-      }, 4000);
-      }, 2000);
+  guild.systemChannel.send({ content: `Coucou !`, embeds: [embed]});
   
 });
 
-Client.on(`guildUpdate`, function(oldGuild, newGuild){
-  const Ch_Infos = db.get(`guild_${oldGuild.id}_Infos_${Client.user.id}`)
-  const Ch_Logs = db.get(`guild_${oldGuild.id}_Logs_${Client.user.id}`)
+Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
+  const Ch_Infos = db.get(`guild_${oldGuild.id}_Infos`);
+  const Ch_Logs = db.get(`guild_${oldGuild.id}_Logs`);
+  newGuild.members.fetch(newGuild.ownerId).then(async creator2 => {
+  oldGuild.members.fetch(oldGuild.ownerId).then(async creator => {
   const Embed = new Discord.MessageEmbed()
   const Embed_2 = new Discord.MessageEmbed()
   Embed.setColor('#42ff00')
   Embed_2.setColor('#42ff00')
-  newGuild.fetch(newGuild.ownerID)
   Embed_2.addField(`Nom`, newGuild.name)
   Embed_2.addField(`Icon`, newGuild.iconURL({size: 4096}))
   Embed_2.setImage(newGuild.iconURL({size: 4096}))
-  Embed_2.addField(`Gérant`, newGuild.owner.user.toString())
+  Embed_2.addField(`Gérant`, creator2.toString())
   Embed_2.setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
   Embed_2.setTimestamp()
 
@@ -637,7 +825,7 @@ Client.on(`guildUpdate`, function(oldGuild, newGuild){
   .addField(`Ancien Nom`, oldGuild.name)
   .setTimestamp()
   .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
-  Client.channels.cache.get(Ch_Logs).send(Embed)
+  Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
   } else if(oldGuild.icon !== newGuild.icon){
     Embed.addField(`Nouvelle Icon`, newGuild.iconURL({size: 4096}))
     .setImage(newGuild.iconURL({size: 4096}))
@@ -645,35 +833,29 @@ Client.on(`guildUpdate`, function(oldGuild, newGuild){
     .setImage(oldGuild.iconURL({size: 4096}))
     .setTimestamp()
     .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
-    Client.channels.cache.get(Ch_Logs).send(Embed)
+    Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
     }
   
-    else if(oldGuild.ownerID !== newGuild.ownerID){
-      oldGuild.fetch(oldGuild.ownerID)
-      newGuild.fetch(newGuild.ownerID)
-      Embed.addField(`Nouveau gérant`, newGuild.owner.user.toString())
-      .addField(`Ancien gérant`, oldGuild.owner.user.toString())
+    else if(oldGuild.ownerId !== newGuild.ownerId){
+      oldGuild.fetch(oldGuild.ownerId)
+      newGuild.fetch(newGuild.ownerId)
+      Embed.addField(`Nouveau gérant`, creator2.toString())
+      .addField(`Ancien gérant`, creator.toString())
       .setTimestamp()
       .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
-      Client.channels.cache.get(Ch_Logs).send(Embed)
+      Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
       }
-    Client.channels.cache.get(Ch_Infos).send(Embed_2)
+    Client.channels.cache.get(Ch_Infos).send({ embeds: [Embed_2] })
+  })
+  })
   
 });
 
-Client.on(`guildDelete`, async (guild) => {
-  const Ch_Logs = `831987411265388575`
-  const category = await Client.channels.cache.find(ch => ch.name === guild.name && ch.type == 'category' && ch.guild.id == Bot_Guild_ID); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
-category.children.forEach(channel => channel.delete())
-setTimeout(function (){
-category.delete()
-}, 3000)
-  Client.channels.cache.get(Ch_Logs).send(`**${moment().locale('fr').format('H:mm:ss')}** **${guild.owner}** a détruit/quitté **${guild.name}**`);
-});
+Client.on(`guildDelete`, async (guild) => Client.channels.cache.get(`831987411265388575`).send(`**${moment().format('H:mm:ss')}** **${guild.owner}** a détruit/quitté **${guild.name}**`));
 
 Client.on(`messageDeleteBulk`, async (messages) => {
-  const Ch_Clear = db.get(`guild_${messages.first().guild.id}_Clear_${Client.user.id}`)
-  const length = messages.array().length;
+  const Ch_Clear = db.get(`guild_${messages.first().guild.id}_Clear`)
+  const length = messages.map().length;
   const channel = Client.channels.cache.get(messages.first().channel.id)
   const embed = new Discord.MessageEmbed()
     .setTitle(`${length} Messages détruit dans ${channel.name}`)
@@ -682,7 +864,7 @@ Client.on(`messageDeleteBulk`, async (messages) => {
     if(msg.content !== ``){
       if (msg.attachments.size > 0) {
         var Attachment_1 = (msg.attachments)
-        var Attachment_2 = ` et comme attachements : ${Attachment_1.array()[0].url}`
+        var Attachment_2 = ` et comme attachements : ${Attachment_1.map(att => att.proxyURL)}`
         var Message = `${msg}${Attachment_2}`
     } else {
       var Attachment_1 = null
@@ -692,51 +874,84 @@ Client.on(`messageDeleteBulk`, async (messages) => {
     } else {
       if (msg.attachments.size > 0) {
         var Attachment_1 = (msg.attachments)
-        var Attachment_2 = `comme attachements : ${Attachment_1.array()[0].url}`
+        var Attachment_2 = `comme attachements : ${Attachment_1.map(att => att.proxyURL)}`
         var Message = `${Attachment_2}`
-    }
+    } else var Message = `???`
   }
   embed.addField(msg.author.tag, Message)
 })
     embed.setColor('#42ff00')
     .setTimestamp();
   // alternatively, use this to send the message to a specific channel
-  (await Client.channels.cache.get(Ch_Clear)).send(embed);
+  Client.channels.cache.get(Ch_Clear).send({ embeds: [embed]});
 });
 
 Client.on(`messageDelete`, async (message) => {
-  const Ch_Msg_2 = db.get(`guild_${message.guild.id}_Message-2_${Client.user.id}`)
-  var Message = await message.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
+  if(message.type == 'THREAD_STARTER_MESSAGE') return console.log(`test`)
+  const Ch_Msg_2 = db.get(`guild_${message.guild.id}_Message-2`)
+  var Message = message.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
+  if (message.attachments.size > 0) {
+    var Attachment_1 = message.attachments
+    var Attachment_2 = `comme fichier : [ ${Attachment_1.map(att => `${att.name} : ${att.size / 1000}Ko ${att.url}`).join(` ; `)} ]`
+} else var Attachment_2 = ``
+if (message.embeds.length > 0) {
+  const Embeds = new Map();
+  const Embed = {
+    embeds: []
+  }
+  Embeds.set(Client.user.id, Embed);
+  const map = Embeds.get(Client.user.id)
+  var Embeds_1 = message.embeds
+  Embeds_1.forEach(embed => {
+  if(embed.title) var Title = `\nTitre : ${embed.title}`
+  if(embed.author) var Aut = `\nAuteur : ${embed.author.name}`
+  if(embed.hexColor) var Color = `\nCouleur : ${embed.hexColor}`
+  if(embed.description) var Desc = "\nDescription : ```" + embed.description + "```"
+  if(embed.fields.length > 1) var Fields = `\nFields : [ ${embed.fields.map(field => `Nom : ${field.name}, Valeur : ${field.value}, Inline : ${field.inline}`)} ]`
+  if(embed.timestamp) var Time = `\nHeure : ${moment(embed.timestamp).format(`Do:MM:YYYY H:mm:ss`)}`
+  if(embed.footer !== null) var Foot = `\nFooter : ${embed.footer}`
+  if(embed.image) var Img = `\nImage : ${embed.image.url}`
+  if(embed.thumbnail !== null) var Minia = `\nMiniature : ${embed.thumbnail}`
+  if(embed.video) var Vid = `\nVideo : ${embed.video}`
+  Embed.embeds.push(`${Title || ``}${Aut || ``}${Color || ``}${Desc || ``}${Fields || ``}${Time || ``}${Foot || ``}${Img || ``}${Minia || ``}${Vid || ``}`)
+})
+  var Embeds_3 = `comme embeds : [ ${map.embeds.join(`\n ------------------------------------------------ \n`)} ]`
+} else var Embeds_3 = ``
+if(message.content !== ``)var Message = message.content
+else var Message = ``
+if(Message && Embeds_3) var and1 = ` et `
+if(Message && Attachment_2) var and1 = ` et `
+if(Embeds_3 && Attachment_2) var and2 = ` et `
   if(message.author.tag == CreatorTag || message.author.tag === Charlotte_Tag)var User = CreatorTag
   else var User = `${message.author.toString()} (**${message.author.tag}**)`
-  Client.channels.cache.get(Ch_Msg_2).send(`**${moment().locale('fr').format('H:mm:ss')}** Message supprimé de ${User} -> ${Message}`);
+  Client.channels.cache.get(Ch_Msg_2).send(`**${moment().format('H:mm:ss')}** Message supprimé de ${User} -> ${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`);
 });
 
 Client.on(`messageUpdate`, async (oldMessage, newMessage) => {
-  var OldMessage = await oldMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
-  var NewMessage = await newMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
+  var OldMessage = oldMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
+  var NewMessage = newMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   if(OldMessage === NewMessage) return;
-  const Ch_Msg_2 = db.get(`guild_${oldMessage.guild.id}_Message-2_${Client.user.id}`)
+  const Ch_Msg_2 = db.get(`guild_${oldMessage.guild.id}_Message-2`)
   if(oldMessage.member.id === CreatorID) var User = CreatorTag
-  else var User = `${oldMessage.member.user.toString()} (**${oldMessage.member.user.tag}**)`
-  Client.channels.cache.get(Ch_Msg_2).send(`**${moment().locale('fr').format('H:mm:ss')}** Message modifié de ${User} -> ${OldMessage} en ${NewMessage}`);
+  else var User = `${oldMessage.member.user.toString()} (**${oldMessage.author.tag}**)`
+  Client.channels.cache.get(Ch_Msg_2).send(`**${moment().format('H:mm:ss')}** Message modifié de ${User} -> ${OldMessage} en ${NewMessage}`);
 });
 
-Client.on(`roleCreate`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role_${Client.user.id}`)).send(`**${moment(role.createdAt).format('H:mm:ss')}** ${role.toString()} (**${role.name}**) a été créer`));
+Client.on(`roleCreate`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role`)).send(`**${moment(role.createdAt).format('H:mm:ss')}** ${role.toString()} (**${role.name}**) a été créer`));
 
-Client.on(`roleDelete`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role_${Client.user.id}`)).send(`**${moment().locale('fr').format('H:mm:ss')}** Le role **${role.name}** a été retiré`))
+Client.on(`roleDelete`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role`)).send(`**${moment().format('H:mm:ss')}** Le role **${role.name}** a été retiré`))
 
 Client.on(`roleUpdate`, async (oldRole, newRole) => {
-  const Ch_Role = db.get(`guild_${oldRole.guild.id}_Role_${Client.user.id}`)
+  const Ch_Role = db.get(`guild_${oldRole.guild.id}_Role`)
   const OldColor = oldRole.guild.roles.cache.get(oldRole.id).displayColor
   const NewColor = newRole.guild.roles.cache.get(newRole.id).displayColor
   if(oldRole === newRole) return;
-  if(oldRole.name !== newRole.name) return Client.channels.cache.get(Ch_Role).send(`**${moment().locale('fr').format('H:mm:ss')}** Le role **${oldRole.toString()}** (**${oldRole.name}**) a changé de nom en **${newRole.name}**`);
-  if(oldRole.color !== newRole.color) return Client.channels.cache.get(Ch_Role).send(`**${moment().locale('fr').format('H:mm:ss')}** Le role **${oldRole.toString()}** (**${oldRole.name}**) a changé de couleur de ${OldColor} à ${NewColor}`)
+  if(oldRole.name !== newRole.name) return Client.channels.cache.get(Ch_Role).send(`**${moment().format('H:mm:ss')}** Le role **${oldRole.toString()}** (**${oldRole.name}**) a changé de nom en **${newRole.name}**`);
+  if(oldRole.color !== newRole.color) return Client.channels.cache.get(Ch_Role).send(`**${moment().format('H:mm:ss')}** Le role **${oldRole.toString()}** (**${oldRole.name}**) a changé de couleur de ${OldColor} à ${NewColor}`)
 });
 
 Client.on('inviteCreate', async invite => {
-  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite_${Client.user.id}`)
+  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite`)
   const { inviter } = invite
   if((invite.maxUses == null) || 0) var MaxUses = `Illimited`
   else var MaxUses = invite.maxUses
@@ -744,65 +959,24 @@ Client.on('inviteCreate', async invite => {
 });
 
 Client.on('inviteDelete', async invite => {
-  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite_${Client.user.id}`)
+  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite`)
   if((invite.maxUses == null) || 0) var MaxUses = `Illimited`
   else var MaxUses = invite.maxUses
-  Client.channels.cache.get(Ch_Invite).send(`**${moment().locale('fr').format('H:mm:ss')}** Invite deleted ; the code was **${invite.code}** with **${MaxUses}** Max Uses ; create at : **${moment(invite.createdAt).format(`Do/MM/YYYY H:mm`)}** ; expire at : **${moment(invite.expiresAt).format(`Do/MM/YYYY H:mm`)}**`)
+  Client.channels.cache.get(Ch_Invite).send(`**${moment().format('H:mm:ss')}** Invite deleted ; the code was **${invite.code}** with **${MaxUses}** Max Uses ; create at : **${moment(invite.createdAt).format(`Do/MM/YYYY H:mm`)}** ; expire at : **${moment(invite.expiresAt).format(`Do/MM/YYYY H:mm`)}**`)
 });
 
-Client.on(`message`, async message => {
+Client.on('messageCreate', async message => {
   const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
     const args = message.content.substring(Prefix.length).split(` `);
-
-  if(message.author.tag == CreatorTag)var User = CreatorTag
-  else var User = `${message.author.toString()} (**${message.author.tag}**)`
-    const Ch_MemberCount = db.get(`guild_${message.guild.id}_MemberCount_${Client.user.id}`)
-    const Ch_Clear = db.get(`guild_${message.guild.id}_Clear_${Client.user.id}`)
-    const Ch_Msg_1 = db.get(`guild_${message.guild.id}_Message-1_${Client.user.id}`)
-
-  const IDGGuild = Client.guilds.cache.find(guild => guild.id == message.guild.id);
-  var memberCount = IDGGuild.memberCount;
+    const Ch_MemberCount = db.get(`guild_${message.guild.id}_MemberCount`)
 const Gu = message.guild.memberCount;
-Client.channels.cache.get(Ch_MemberCount).setName(`Membres : ${Gu}`);
+Client.channels.cache.get(Ch_MemberCount).setName(`Membres : ${Gu}`)
 
-if(message){
-if(message.channel.lastMessage.author.id === Client.user.id) return;
-var msg = message.content.replace("<@!688327045129699400>", "@-Charlotte")
-var Msg = msg.replace("<@!776140752752869398>", "@-Xitef156")
-var msg = Msg.replace("<@688327045129699400>", "@-Charlotte")
-var Msg = msg.replace("<@776140752752869398>", "@-Xitef156")
-  var Message = await Msg.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
-  if(message.guild.id === Bot_Guild_ID) return;
-  if(message.channel.id === Ch_Err) return;
-  if(message.channel.id === `840923591460651008`) return;
-  if(message.channel.id === `840923591460651008`) return;
-  if(message.channel.id === `777937994245996545`) return;
-  if(message.guild.id === `787081936719708221`) var Channel = `840923591460651008`
-  else var Channel = Ch_Msg_1
-  if(message.content !== ``){
-    if (message.attachments.size > 0) {
-      var Attachment_1 = (message.attachments)
-      var Attachment_2 = ` et comme fichier : ${Attachment_1.array()[0].url}`
-      var MESSAGE = `: ${Message}${Attachment_2}`
-  } else {
-    var Attachment_1 = null
-    var Attachment_2 = null
-    var MESSAGE = `: ${Message}`
-  }
-  } else {
-    if (message.attachments.size > 0) {
-      var Attachment_1 = (message.attachments)
-      var Attachment_2 = `comme fichier : ${Attachment_1.array()[0].url}`
-      var MESSAGE = `${Attachment_2}`
-  }
-}
-if(message.content.startsWith(Prefix)) Client.channels.cache.get(`777937994245996545`).send(`**${moment(message.createdAt).format('H:mm:ss')}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
-else Client.channels.cache.get(Channel).send(`**${moment(message.createdAt).format('H:mm:ss')}** Salon : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${MESSAGE}`)
-}
+Message(message)
 
     if(message.content.startsWith(`${Prefix}prefix`))  {
 
-      if(!message.member.hasPermission('MANAGE_GUILD')) return message.channel.send (`Tu n'as pas les perms`)
+      if(!message.member.permissionsIn().has('MANAGE_GUILD')) return message.channel.send (`Tu n'as pas les perms`)
       if(!args[1]) return message.channel.send(`Tu doit spécialiser un prefix`)
       if(args[1].length > 3) return message.channel.send(`U prefix ne peut avoir plus de 3 charactères`)
       if(args[1] === db.get(`guild_${message.guild.id}_prefix`)) return message.channel.send(`C'est déjà le prefix`)
@@ -819,12 +993,12 @@ const command = args.shift().toLowerCase()
 if(message.content.startsWith(Prefix + `view`)){
   if(!args[0]) return message.channel.send(`${Prefix}view **channel**/**role**`)
     if(args[0] == `channel`){
-      var a = db.get(`guild_${message.guild.id}_MemberAdd_${Client.user.id}`)
-      var b = db.get(`guild_${message.guild.id}_Memberwelcome_${Client.user.id}`)
+      var a = db.get(`guild_${message.guild.id}_MemberAdd`)
+      var b = db.get(`guild_${message.guild.id}_Memberwelcome`)
       if(a == `undefined`) var c = `*Non définie*`
       else var c = Client.channels.cache.find(ch => ch.id == a)
-      var e = db.get(`guild_${message.guild.id}_MemberRemove_${Client.user.id}`)
-      var f = db.get(`guild_${message.guild.id}_Memberleft_${Client.user.id}`)
+      var e = db.get(`guild_${message.guild.id}_MemberRemove`)
+      var f = db.get(`guild_${message.guild.id}_Memberleft`)
       if(e == `undefined`)var g = `*Non définie*`
       else var g = Client.channels.cache.find(ch => ch.id == e)
       if(!message.guild.me.permissionsIn(c).has('SEND_MESSAGES')) message.channel.send(`Je n'ai pas les permissions dans **${c}**`)
@@ -841,50 +1015,50 @@ if(message.content.startsWith(Prefix + `set`)){
       if(!args[1]) return message.channel.send(`${Prefix}set **channel** (welcome/left) (on/off/name_channel/id_channel)`)
       if(args[1] == `welcome`){
         if(!args[2]) {
-          db.set(`guild_${message.guild.id}_MemberAdd_${Client.user.id}`, Channel.id)
+          db.set(`guild_${message.guild.id}_MemberAdd`, Channel.id)
           message.channel.send(`Le channel ${Channel} est maintenant le lieu du message de bienvenue`)
         }
       else if(args[2]){
         if(isNaN(args[2])){
         if(args[2] == `on`){
-          db.set(`guild_${message.guild.id}_Memberwelcome_${Client.user.id}`, `On`)
+          db.set(`guild_${message.guild.id}_Memberwelcome`, `On`)
           message.channel.send(`Le channel **${args[1]}** de bienvenue est maintenant activé`);
         } else if(args[2] == `off`){
-          db.set(`guild_${message.guild.id}_Memberwelcome_${Client.user.id}`, `Off`)
+          db.set(`guild_${message.guild.id}_Memberwelcome`, `Off`)
           message.channel.send(`Le channel **${args[1]}** de bienvenue est maintenant désactivé`);
         } else {
           var Channel = message.guild.channels.cache.find(ch => ch.name == args[2])
-          db.set(`guild_${message.guild.id}_MemberAdd_${Client.user.id}`, Channel.id)
+          db.set(`guild_${message.guild.id}_MemberAdd`, Channel.id)
           message.channel.send(`Le channel ${Channel} est maintenant le lieu du message de bienvenue`)
         }
         } else {
           if(!message.guild.channels.cache.find(ch => ch.id == args[2])) return;
-          db.set(`guild_${message.guild.id}_MemberAdd_${Client.user.id}`, args[2])
+          db.set(`guild_${message.guild.id}_MemberAdd`, args[2])
           var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
           message.channel.send(`Le channel ${Ch} est maintenant le lieu du message de bienvenue`)
         }
       }
     } else if(args[1] == `left`){
       if(!args[2]) {
-        db.set(`guild_${message.guild.id}_MemberRemove_${Client.user.id}`, Channel.id)
+        db.set(`guild_${message.guild.id}_MemberRemove`, Channel.id)
         message.channel.send(`Le channel ${Channel} est maintenant le lieu du message d'adieu`)
       }
     else if(args[2]){
       if(isNaN(args[2])){
       if(args[2] == `on`){
-        db.set(`guild_${message.guild.id}_Memberleft_${Client.user.id}`, `On`)
+        db.set(`guild_${message.guild.id}_Memberleft`, `On`)
         message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant activé`);
       } else if(args[2] == `off`){
-        db.set(`guild_${message.guild.id}_Memberleft_${Client.user.id}`, `Off`)
+        db.set(`guild_${message.guild.id}_Memberleft`, `Off`)
         message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant désactivé`);
       } else {
         var Channel = message.guild.channels.cache.find(ch => ch.name == args[2])
-        db.set(`guild_${message.guild.id}_MemberRemove_${Client.user.id}`, Channel.id)
+        db.set(`guild_${message.guild.id}_MemberRemove`, Channel.id)
         message.channel.send(`Le channel ${Channel} est maintenant le lieu du message d'adieu`)
       }
       } else {
         if(!message.guild.channels.cache.find(ch => ch.id == args[2])) return;
-        db.set(`guild_${message.guild.id}_MemberRemove_${Client.user.id}`, args[2])
+        db.set(`guild_${message.guild.id}_MemberRemove`, args[2])
         var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
         message.channel.send(`Le channel ${Ch} est maintenant le lieu du message d'adieu`)
       }
@@ -892,6 +1066,7 @@ if(message.content.startsWith(Prefix + `set`)){
     }
   }
 }
+if(message.content.startsWith(Prefix + 'server')) server(args[0], args[1]);
     
     if(message.content == Prefix + `help`){
       const Embed = new Discord.MessageEmbed()
@@ -919,7 +1094,7 @@ if(message.content.startsWith(Prefix + `set`)){
       Embed.addField(`${Prefix}set`, `Paramètre le bot`, true)
       Embed.addField(`${Prefix}view`, `Vois les paramètres de bot`, true)
       Embed.addField(`${Prefix}download`, `Télécharge votre musique/vidéo (Youtube et Soundcloud)`, true)
-        message.channel.send(Embed)
+        message.channel.send({ embeds: [Embed]})
     }
 
     if(message.content == Prefix + `pres`){
@@ -934,20 +1109,18 @@ if(message.content.startsWith(Prefix + `set`)){
       .addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
       .setTimestamp()
       .setFooter(`Team Dragon`, Client.user.displayAvatarURL())
-      message.channel.send(embed)
+      message.channel.send({ embeds: [embed]})
   }
 
   if(message.content.startsWith(Prefix + `download`)){
     if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
     (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
-    if (!fs.existsSync(`./Download`)) fs.mkdirSync(`./Download`);
     if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
     if (!fs.existsSync(`./Download/MP4`)) fs.mkdirSync(`./Download/MP4`);
-    if (!fs.existsSync(`./Download/Others`)) fs.mkdirSync(`./Download/Others`);
     if (!fs.existsSync(`./Download/Others/MP3`)) fs.mkdirSync(`./Download/Others/MP3`);
     if (!fs.existsSync(`./Download/Others/MP4`)) fs.mkdirSync(`./Download/Others/MP4`);
     message.channel.send(`Recherche en cours...`)
-    if(message.author.id === CreatorID) var Location = `/`
+    if(AuthifCreator) var Location = `/`
     else var Location = `/Others/`
     var Code = makeid(10)
     var Title = remSpCh(`${message.author.tag} - ${Code}`)
@@ -957,15 +1130,16 @@ if(message.content.startsWith(Prefix + `set`)){
       else var Args = args[0]
           SC.getSongInfo(Args).then(async song => {
             message.channel.send(`Téléchargement de **${song.title}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-            if(message.author.id == CreatorID) var Title = remSpCh(song.title)
+            if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
             var File = `./Download${Location}MP3/${Title}.mp3`
             const url = song.thumbnail
         const options = {
           url: url,
           dest: `./Download/${song.id}.png`                // will be saved to /path/to/dest/image.jpg
         }
-        download.image(options)
+        Download.image(options)
               const stream = await song.downloadProgressive();
+              console.log(stream)
               const writer = stream.pipe(fs.createWriteStream(File));
               writer.on("finish", () => {
         db.set(`Title1_${Code}`, song.title)
@@ -981,68 +1155,71 @@ if(message.content.startsWith(Prefix + `set`)){
   })
 } else {
       var format = `4`
-    if(args[0].startsWith(`http`)) var URL = args[0]
-    else if(args[1].startsWith(`http`)) var URL = args[1]
     if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
       var format = `3`
-      if(!URL) var vid = args.join(` `).replace(`mp3`, ``)
+      var filter = `audio`
+      var vid = args.join(` `).replace(`mp3`, ``)
       } else {
       var format = `4`
-      if(!URL) var vid = args.join(` `)
+      var filter = `video`
+      var vid = args.join(` `)
     }
-    if(URL) var vid = URL
     db.set(`Format`, format)
     const video = await videoFinder(vid)
     if(message.author.id == CreatorID) var Title = remSpCh(video.title)
     const stream = ytdl(video.url, {
-      filter: `audioonly`,
+      filter: `${filter}only`,
       quality: 'highest'
     })
     var File = `./Download${Location}MP${format}/${Title}.mp${format}`
     if(format == `3`){
-      const url = video.image
-      const download = require('image-downloader')
   const options = {
-    url: url,
+    url: video.image,
     dest: `./Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
   }
-  download.image(options)
+  Download.image(options)
   db.set(`Title_${Code}`, video.title)
   db.set(`Author_${Code}`, video.author.name)
   db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
   db.set(`Location`, `./Download${Location}work${Code}.mp${format}`)
+}
       db.set(`Title2_${Code}`, Title)
               db.set(`Title_${video.videoId}`, video.title)
               db.set(`Duration_${video.videoId}`, video.timestamp)
-}
-if(fs.existsSync(File)) {
-  if(message.author.id === CreatorID) SendFile()
-  else fs.unlinkSync(File)
-}
     message.channel.send(`Téléchargement de **${video.title}.mp${format}** de **${video.author.name}** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-    stream.pipe(fs.createWriteStream(File)).on('finish', () => {
+    const download = stream.pipe(fs.createWriteStream(File))
+    download.on('finish', async () => {
       if(format == `4`) {
         ytdl(video.url, {
-          format: `mp4`,
-          filter: 'videoonly',
+          filter: 'audioonly',
           quality: 'highest'
-        }).pipe(fs.createWriteStream(`./Download${Location}MP4/${Code}_2.mp4`)).on('finish', () => {
-        ffmpeg(File)
-        .addInput(`./Download${Location}MP4/${Code}_2.mp4`)
-        .output(`./Download${Location}work_${Code}.mp4`)
-        .on('end', () => {
-          fs.unlinkSync(File)
-          fs.unlinkSync(`./Download${Location}MP4/${Code}_2.mp4`)
-          fs.renameSync(`./Download${Location}work_${Code}.mp4`, File)
-        SendFile()
         })
-        .run()
-        })
-      }
-      else ChangeFile()
-  })
+        .pipe(fs.createWriteStream(`./Download${Location}MP4/${Code}_2.mp3`))
+        .on('finish', async () => {
+              ffmpeg(File)
+              .addInput(`./Download${Location}MP4/${Code}_2.mp3`)
+              .output(`./Download${Location}work_${Code}.mp4`)
+              .on('end', async () => {
+                await fs.renameSync(`./Download${Location}work_${Code}.mp4`, File);
+                fs.unlinkSync(`./Download${Location}MP4/${Code}_2.mp3`);
+                SendFile();
+              })
+              .on('progress', async function(progress) {
+                await sleep(2)
+                if(pourc !== Math.round(progress.percent * 1) / 1){
+                console.log(`Downloading... (${Math.round(progress.percent * 1) / 1}%)`)
+                var pourc = Math.round(progress.percent * 1) / 1
+                }
+              })
+              .run()
+            })
+      } else ChangeFile()
+      })
+  await sleep(2);
+    if(getFilesizeInBytes(File) === 0) message.channel.send(`Cette vidéo ne peut pas se télécharger`);
 }
     function ChangeFile() {
+      message.channel.send(`50%...`)
       var format = db.get(`Format`)
       var LOCATION = db.get(`Location`)
       var TITLE = db.get(`Title2_${Code}`)
@@ -1057,10 +1234,11 @@ if(fs.existsSync(File)) {
         const Tag = { image: IMAGE }
         NodeID3.update(Tag, LOCATION)
         function check2() {
-          setTimeout(() => {
+          setTimeout(async () => {
           var tag = NodeID3.read(LOCATION)
           if(!tag.image) check2();
           else {
+            await fs.unlinkSync(File)
             fs.renameSync(LOCATION, File)
             fs.unlinkSync(IMAGE)
             SendFile()
@@ -1071,14 +1249,14 @@ if(fs.existsSync(File)) {
   })
       .run()
     }
-    function SendFile() {
+    async function SendFile() {
       var format = db.get(`Format`)
       var TITLE = db.get(`Title2_${Code}`)
       var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
-      var File_Size = getFilesizeInBytes(File)
+      var File_Size = await getFilesizeInBytes(File)
       if(File_Size < (8 * 1000 * 1000)) {
         const attachment = new Discord.MessageAttachment(File, `${TITLE}.mp${format}`);
-        message.channel.send(`**${TITLE}** a été téléchargé avec succès`, attachment);
+        message.channel.send({content: `**${TITLE}** a été téléchargé avec succès`, files: [attachment]});
       }
       else {
         if(message.author.id == CreatorID) message.channel.send(`**${Title}** a été téléchargé avec succès (Download/MP${format}/${Title}.mp${format})`);
@@ -1087,7 +1265,7 @@ if(fs.existsSync(File)) {
     }
   }
 
-if(message.author.id === CreatorID){
+if(AuthifCreator){
 
 if(message.content.startsWith(Prefix + `get_msg`)){
   var amount = args[0]; // Amount of messages which should be deleted
@@ -1104,21 +1282,32 @@ if(message.content.startsWith(Prefix + `get_msg`)){
   })
 }
 
-  if(message.content == Prefix + `ptdr`){
+  if(message.content === Prefix + `ptdr`){
+    const id = `VzTR0rduUYo`
     const Embed = new Discord.MessageEmbed()
-      .setAuthor(`Nouvelle vidéo`, `https://img.youtube.com/vi/fWqNzd6SnZs/maxresdefault.jpg`)
-      .setTitle(`On se met bien _ Interdit de Casser #1`)
-      .setURL(`https://youtu.be/fWqNzd6SnZs`)
-      .setDescription(`Bonjour, aujourd'hui c'est une survie minecraft 1.17 où je n'ai pas le droit de casser de bloc.\n\nCeci est le premier épisode, dite-moi si cette série de vidéos vous plaît.\n\nVersion : 1.17.1\nRessource pack : Sphax PureBDCraft : https://bdcraft.net/downloads/purebdc...\nSeed : 1173031306648354940`)
-      .setTimestamp()
-      .setColor('#42ff00')
-      message.channel.send(`@everyone`, Embed)
-      Client.channels.cache.get(`778605555773734922`).send(`@everyone`, Embed)
+    .setAuthor(`Nouvelle vidéo`)
+    .setImage(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
+    .setTitle(`On avance ! Interdit de Casser #2`)
+    .setURL(`https://www.youtube.com/watch?v=${id}`)
+    .setDescription(`Bonjour, aujourd'hui c'est une survie Minecraft 1.17 où je n'ai pas le droit de casser de bloc.
+
+
+    Ceci est le second épisode, regarder la premier si vous ne l'avez pas vu et dite-moi si cette série de vidéos vous plaît.
+    
+    
+    Jeu : https://www.minecraft.net/fr-fr/get-minecraft
+    
+    Version : 1.17.1
+    Ressource pack : Sphax PureBDCraft : https://bdcraft.net/downloads/purebdcraft-minecraft/
+    Seed : 1173031306648354940`)
+    .setTimestamp()
+    .setColor('#42ff00')
+    message.channel.send({content: `@everyone`, embeds: [Embed]})
 }
 
 if(message.content == Prefix + `xd`){
   message.guild.channels.create('⛏-Minecraft-Console-⛏', {
-    type: 'text',
+    type: 'GUILD_TEXT',
     parent: message.channel.parent,
     permissionOverwrites: [
       {id: message.guild.id,deny: ['SEND_MESSAGES','VIEW_CHANNEL']
@@ -1127,14 +1316,15 @@ if(message.content == Prefix + `xd`){
     }],
     position: 2
     }).then(Console => {
-      db.set(`guild_${message.guild.id}_Minecraft-Console_${Client.user.id}`, Console.id)
+      db.set(`guild_${message.guild.id}_Minecraft-Console`, Console.id)
       message.author.send(`${Console.id}`)
     })
 }
 
 if(message.content.startsWith(Prefix + `lol`)){
-          const c = Client.channels.cache.find(ch => ch.id == args[0])
-        message.channel.send(`${c}`)
+          const c = Client.channels.cache.get(args[0])
+          console.log(c)
+        message.channel.send(`${c.toString()}`)
     }
 
 if(message.content == Prefix + `xD`){
@@ -1145,12 +1335,26 @@ if(message.content == Prefix + `xD`){
     },
   ]);
 }
+if(message.content === `!xptdr`){
+  const category = message.guild.channels.cache.get(message.channel.parentId); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
+const guild = await Client.guilds.cache.find(g => g.name === message.channel.parent);
+category.children.forEach(async Ch => {
+  const ch = await Client.channels.cache.get(Ch.id)
+  setTimeout(() => {
+  if(ch.type == 'GUILD_CATEGORY') return db.set(`guild_${guild.id}_Category`, ch.id);
+  if(ch.isVoice()) var Channel = `MemberCount`
+  else {
+    var i = ch.name.charAt(0);
+    var Channel = ch.name.replace(i, i.toUpperCase());
+  }
+  db.set(`guild_${guild.name}_${Channel}`, ch.id)
+}, 1000);
+});
+}
 if(message.content == `,mdr`){
-  const category = await message.guild.channels.cache.get(message.channel.parentID); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
-category.children.forEach(channel => channel.delete())
-setTimeout(() => {
+  const category = message.guild.channels.cache.get(message.channel.parentId); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
+await category.children.forEach(channel => channel.delete())
 category.delete()
-}, 3000)
 }
 }
 
@@ -1173,7 +1377,7 @@ category.delete()
       .addField(`Vitesse du vent : `, current.winddisplay, true)
       .addField(`Humidité : `, `${current.humidity}%`, true)
       .addField(`Timezone : `, `UTC${location.timezone}`, true)
-      message.channel.send(embed)
+      message.channel.send({ embeds: [embed]})
 
     })
 
@@ -1202,11 +1406,16 @@ category.delete()
       message.channel.send(`Réponse : ` + ans)
     }, 25)
 }
-if(message.content == Prefix + `link`)message.author.send(Client.generateInvite(['ADMINISTRATOR', 'VIEW_AUDIT_LOG', 'KICK_MEMBERS', 'BAN_MEMBERS', 'SEND_MESSAGES', 'MANAGE_NICKNAMES', 'MANAGE_CHANNELS', 'MANAGE_MESSAGES', 'MANAGE_ROLES', 'MANAGE_GUILD', 'MENTION_EVERYONE']))
+if(message.content == Prefix + `link`){
+  var Perm = Discord.Permissions.FLAGS
+  message.author.send(
+  Client.generateInvite({ scopes: ['bot'], permissions: [Perm.ADMINISTRATOR, Perm.VIEW_AUDIT_LOG, Perm.KICK_MEMBERS, Perm.BAN_MEMBERS, Perm.SEND_MESSAGES, Perm.MANAGE_NICKNAMES, Perm.MANAGE_CHANNELS, Perm.MANAGE_MESSAGES, Perm.MANAGE_ROLES, Perm.MANAGE_GUILD, Perm.MENTION_EVERYONE]
+  }))
+  }
 if(message.channel.type == `dm`) return;
 if(message.author.bot) return; // Les commandes en privé ne peuvent pa être reçu
 
-    if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
+    if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
         if(message.content.startsWith(Prefix + `ban`)){
             let mention = message.mentions.members.first();
             if(mention == undefined)message.reply(`Membre non ou mal mentionné`);
@@ -1261,7 +1470,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
       if(args[0] == `delete`){
           const role_d = message.guild.roles.cache.find(role => role.name === args[2])
         if(message.guild.roles.cache.find(role => role.name == args[2])){
-          if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
+          if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
           role_d.delete()
           message.channel.send(`${args[1]} n'existe plus`)
         }
@@ -1271,7 +1480,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
       if(args[0] == `create`){
         if(!args[1]) return message.channel.send(`Donne une couleur de role en premier`)
         if(!args[2]) return message.channel.send(`Donne un nom de role après`)
-        if(message.member.hasPermission(`ADMINISTRATOR`) || AuthifCreator){
+        if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
               message.guild.roles.create({ // Creating the role since it doesn't exist.
                     data: {
                         name: `${args.slice(2).join(` `)}`,
@@ -1297,26 +1506,23 @@ if(message.content.startsWith(Prefix + `list`)){
       Embed.setTitle(`Les ${message.guild.members.cache.size} membres du serveur`)
       Embed.setDescription(Role_m)
     }
-    message.author.send(Embed)
+    message.author.send({ embeds: [Embed]})
 }
 
       if(message.content.startsWith(Prefix + `clear`)){
-        var amount = args[0]; // Amount of messages which should be deleted
+        console.log(parseInt(args[0]))
+        var amount = parseInt(args[0]); // Amount of messages which should be deleted
         var Reset = 0
-        if(message.author.id !== CreatorID) var Reset = 1
-        if(message.author.id !== message.guild.ownerID) var Reset = 1
-        if(Reset = 1) return message.channel.send (`Tu n\'es pas le chef du serveur`);
-          if(!amount)return message.channel.send('Vous n\'avez pas donné une quantité de messages qui devraient être supprimés !') // Checks if the `amount` parameter is given
+        if(AuthifCreator) var Reset = 1
+        if(message.author.id === message.guild.ownerId) var Reset = 1
+        if(message.member.permissions.toArray().includes('ADMINISTRATOR')) var Reset = 1
+        if(Reset === 0) return message.channel.send (`Tu n\'es pas le chef du serveur`);
+          if(!amount) return message.channel.send('Vous n\'avez pas donné une quantité de messages qui devraient être supprimés !') // Checks if the `amount` parameter is given
           if(isNaN(amount)) return message.channel.send('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
           if(amount > 100) return message.channel.send('Vous ne pouvez pas supprimer plus de 100 messages à la fois !') // Checks if the `amount` integer is bigger than 100
-          if(amount < 1) return message.channel.send('Vous devez supprimer au moins 1 message !') // Checks if the `amount` integer is smaller than 1
-          message.delete()
-          if(1 < amount > 100) var amount = amount + 1
-          Client.channels.cache.get(Ch_Clear).send('```dans '+ message.guild.name + ', les messages supprimés de ' + message.author + ' sont : ```')
-          message.channel.messages.fetch({ limit: amount }).then(messages => {
-                messages.forEach(msg => Client.channels.cache.get(Ch_Clear).send('**' + msg.author.tag + '** : ```' + msg.content + '```\n'))
-          message.channel.bulkDelete(messages)
-        })
+          if(1 > amount) return message.channel.send('Vous devez supprimer au moins 1 message !') // Checks if the `amount` integer is smaller than 1
+          await message.delete()
+          message.channel.messages.fetch({ limit: amount }).then(messages => message.channel.bulkDelete(messages))
   }
 
   if(message.content.startsWith(Prefix + `ulti_clear`)){
@@ -1337,11 +1543,14 @@ if(message.content.startsWith(Prefix + `list`)){
     if(command === `say`) message.channel.send(args.join(` `))
     
     if(message.content.startsWith(Prefix + `stat`)){
-      message.guild.members.fetch(message.guild.ownerID).then(creator => {
-      let mention = message.mentions.members.first()
-      let U_Role = mention.roles.cache.map(role => role.name).join(` `);
+      if(!args[0] || !args[0].startsWith('<@&') && args[0].endsWith('>')) return message.channel.send(`Mentionne quelqu'un pour l'utiliser`)
+      message.guild.members.fetch(message.guild.ownerId).then(creator => {
+      let Mention = args[0].slice(3, -1);
+      const MenTion = Client.users.cache.get(Mention);
+      const mention = Client.guilds.cache.get(message.guild.id).members.fetch(MenTion)
+      const U_Role = mention.roles.cache.map(role => role.name).join(` `);
       if(!mention) return message.reply(`Membre non ou mal mentionné`)
-    message.author.send(`**${mention.user.username}** qui a pour identifient : **${mention}** *ou* **${mention.user.tag}** il a comme role : **${U_Role}** dans le serveur : **${message.guild.name}**, créer par ${creator.user.tag}`)
+    message.author.send(`**${mention.user.username}** qui a pour identifient : **${mention.user.toString()}** *ou* **${mention.user.tag}** il a comme role : **${U_Role.toString()}** dans le serveur : **${message.guild.name}**, créer par ${creator.user.tag}`)
     })
   }
 
@@ -1359,43 +1568,47 @@ if(message.content.startsWith(Prefix + `list`)){
     if(message.content.startsWith(Prefix)){
       var args2 = message.content.substring(Prefix.length).split(" ");
     const voiceChannel = message.member.voice.channel
-    var Songs = queue.get(message.guild.id);
     switch (args2[0].toLowerCase()) {
       case "play":
+        var Songs = queue.get(message.guild.id);
   if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
-  const permissions = voiceChannel.permissionsFor(message.member.user);
+  const permissions = message.member.voice.channel.permissionsFor(message.member.user);
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
   await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
-            const video = await videoFinder(args.join(' '))
+            const video = await videoFinder(args.join(' '));
 
             if(video){
               const New = new Discord.MessageEmbed()
-              var Songs = queue.get(message.guild.id);
-              const song = video.videoId
-              db.set(`Title_${song}`, video.title)
-              db.set(`Duration_${song}`, video.timestamp)
+              var song = {
+                title: video.title,
+                id: video.videoId,
+                author: {
+                  name: video.author.name,
+                  url: video.author.url
+                },
+                duration: video.timestamp
+              };
               if (!Songs) {
               var Song = [];
-              await queue.set(message.guild.id, Song);
-              Song.push(song);
+              Voice.joinVoiceChannel({
+                channelId: message.member.voice.channel.id,
+                guildId: message.guild.id,
+                adapterCreator: message.guild.voiceAdapterCreator
+            }).subscribe(player)
+              queue.set(message.guild.id, Song);
               New.setColor(Bot_Color)
-              New.setTitle(`Joue maintenant :`)
-                play(message.guild, Song[0]);
+              Song.push(song);
+                play(message.guild);
             } else {
+            Songs.push(song);
               New.setColor(`#0xd677ff`)
-              New.setTitle(`Nouvelle vidéo :`)
-              Songs.push(song);
             }
-            New.setTimestamp()
-            New.setImage(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`)
-            New.addField(`Uploader : ${video.author.name}`, `[${video.title}](${video.url})`, true)
-            New.setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
-            message.channel.send(New)
+            New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
+            message.channel.send({ embeds : [New]})
           } else {
               message.channel.send(`Pas de vidéo trouvée`)
-                   voiceChannel.leave();
                    queue.delete(message.guild.id);
                    return;
                  }
@@ -1403,50 +1616,37 @@ if(message.content.startsWith(Prefix + `list`)){
                  case "leave":
   if(!voiceChannel) return message.channel.send(`Tu dois être dans un vocal`);
   queue.delete(message.guild.id);
-  await voiceChannel.leave()
+  Voice.getVoiceConnection(message.guild.id).disconnect();
   message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
   break;
                  case "skip":
-  var Songs = queue.get(message.guild.id);
-        if(!Songs) return message.channel.send(`Il y a rien a skip`)
-        await Songs.shift()
+                  var Songs = queue.get(message.guild.id);
+        if(!Songs) {
+          await Voice.getVoiceConnection(message.guild.id).disconnect();
+          return message.channel.send(`Il y a rien a skip`)
+        } else {
+          await Songs.shift()
+          play(message.guild)
+        }
   message.channel.send(`Skipped !`)
   break;
                  case "queue":
-  var Songs = queue.get(message.guild.id);
+                  var Songs = queue.get(message.guild.id);
         if(!Songs) return message.channel.send(`Il y a rien a voir`)
               const Queue = new Discord.MessageEmbed()
               .setColor(`#00ffff`)
               .setTitle(`Queue de ${message.guild.name}`)
-              Songs.forEach((song, index) => Queue.addField(`${index} : ${db.get(`Title_${song}`)} ; ${db.get(`Duration_${song}`)}`))
-  message.channel.send(Queue)
+              .setDescription(Songs.map((song, index) => `${index} : [${song.title}](https://www.youtu.be/${song.id}) de [${song.author.name}](${song.author.url}) ; ${song.duration}`))
+              message.channel.send({ embeds: [Queue]})
   break;
                 }
-async function play() {
-  var Songs = queue.get(message.guild.id);
-  const song = Songs[0]
-  const stream = ytdl(`https://www.youtube.com/watch?v=${song}`, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
-  await voiceChannel.join().then( async connection => {
-  connection.play(stream)
-  .on('finish', async () => {
-    if(!song) {
-      connection.leave()
-      Songs.delete()
-      return;
-    } else {
-    if(db.get(`guild_${message.guild.id}_Music_Looping`) === `false`) await Songs.shift()
-    play(message.guild, song);
     }
-    })
-})
-}
-              }
 if(message.content === Prefix + `loop`){
-  if(db.get(`guild_${message.guild.id}_Music_Looping`) === `true`){
-    db.set(`guild_${message.guild.id}_Music_Looping`, `false`)
+  if(db.get(`guild_${message.guild.id}_Music_Looping`) === true){
+    db.set(`guild_${message.guild.id}_Music_Looping`, false)
     message.channel.send(`Loop désactivé`)
   } else {
-    db.set(`guild_${message.guild.id}_Music_Looping`, `true`)
+    db.set(`guild_${message.guild.id}_Music_Looping`, true)
     message.channel.send(`Loop activé`)
   }
 }
@@ -1457,10 +1657,34 @@ if(message.content.startsWith(Prefix + `volume`)){
 }
 
 if(message.content == Prefix + `left`){
-  if(message.author.id !== message.guild.ownerID || AuthifNotCreator) return message.channel.send(`Tu n'es pas le chef du serveur`);
+  if(message.author.id !== message.guild.ownerId || AuthifNotCreator) return message.channel.send(`Tu n'es pas le chef du serveur`);
     await message.channel.send(`Adieu...`)
     message.guild.leave()
   }
+
+if(message.content.startsWith(Prefix + `search`)){
+  if(!isNaN(args[0]) && !args[0]) message.channel.send(`Tu peux indiquer le nombre de résultat`)
+  if(!args) return message.channel.send(`Tu doit indiquer ce que tu recherche`)
+  if(!isNaN(args[0])) {
+    var search1 = await message.content.replace(args[0], ``)
+    var search2 = await search1.replace(search1.substr(0,message.content.indexOf(' ')), ``)
+    var search = await search2.replace(`  `, ``)
+    var result = args[0]
+  } else {
+    var search = args.join(` `)
+    var result = 0
+  }
+  var Video = await ytSearch({ search: search })
+  var videos = Video.videos.slice( 0, result )
+  videos.forEach(async (video, index) => {
+  const Search = new Discord.MessageEmbed()
+  .setColor(Bot_Color)
+  .setImage(video.image)
+  .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${search}`)
+  await Search.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
+  await message.channel.send({ embeds: [Search]})
+})
+}
 
 if(message.content == Prefix + `voice`){
   if(message.guild.id == Bot_Guild_ID) var Guild = Client.guilds.cache.find(g => g.name === message.channel.parent.name)
@@ -1476,4 +1700,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(process.env.Token)
+Client.login(Token)

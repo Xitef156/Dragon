@@ -4,8 +4,10 @@
   "ID": "776473077780840509",
   "Logo": "https://cdn.discordapp.com/icons/776473077780840509/de8a0f54bee6d06213bc9645debf01fd.webp?size=4096",
   "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Prefix": null,
+  "Category": null,
   "Channels": {
-    "Message1": "868543399945465917",
+    "Message1": "868950274390245506",
     "Message2": "868543401656729630",
     "Voice": "868950275392679966",
     "Logs": "868950275573047297",

@@ -1,0 +1,27 @@
+{
+  "Name": "Mdr",
+  "MemberCount": "2",
+  "ID": "879396454391775252",
+  "Logo": "https://cdn.discordapp.com/icons/879396454391775252/f2112b0891ddde1e5c213bf2bd9018dd.webp?size=4096",
+  "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Prefix": null,
+  "Category": null,
+  "Channels": {
+    "Message1": "879415847079251988",
+    "Message2": "879415848652144691",
+    "Voice": "879415850220781589",
+    "Logs": "879415851772686347",
+    "Role": "879415853811126322",
+    "Channel": "879415855761485865",
+    "Nickname": "879415857292402728",
+    "Clear": "879415859284680744",
+    "Infos": "879415864833749012",
+    "MemberCount": "879415866524074097"
+  },
+  "Custom": {
+    "Welcome_Ch": null,
+    "Welcome": null,
+    "Left_Ch": null,
+    "Left": null
+  }
+}

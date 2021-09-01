@@ -1,9 +1,11 @@
 {
   "Name": "Le Zoo des Geeks",
-  "MemberCount": "18",
+  "MemberCount": "19",
   "ID": "833727369080340480",
   "Logo": "https://cdn.discordapp.com/icons/833727369080340480/457a2be54c2dc69e09b672405deb51a3.webp?size=4096",
   "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Prefix": null,
+  "Category": null,
   "Channels": {
     "Message1": "868543460934844457",
     "Message2": "868543463413678100",
