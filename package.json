@@ -1,4 +1,11 @@
 {
+  "engines": {
+    "node": "^16.x.x"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "@discordjs/opus": "^0.6.0",
     "@discordjs/voice": "^0.6.0",
