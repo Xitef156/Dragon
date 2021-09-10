@@ -125,11 +125,7 @@ async function guild_create(guild) {
   if(!Client.channels.cache.find(cat => cat.type == 'GUILD_CATEGORY' && cat.id === db.get(`guild_${guild.id}_Category`)))
   await Guild.channels.create(guild.name, {
     type: 'GUILD_CATEGORY',
-    permissionOverwrites: [
-      {id: Guild.id,deny: ['VIEW_CHANNEL']
-      },
-      {id: CreatorID,allow: ['VIEW_CHANNEL']
-    }]
+    permissionOverwrites: [{id: Guild.id,deny: ['VIEW_CHANNEL']}]
   }).then(async Category => {
   db.set(`guild_${guild.id}_Category`, Category.id)
   function text_create(name){
