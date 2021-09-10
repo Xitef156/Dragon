@@ -328,11 +328,10 @@ Client.on(`ready`, async () => {
       fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
   })
             });
-});
-
-process.on('uncaughtException', error => {
+	process.on('uncaughtException', error => {
   Client.channels.cache.get(Ch_Err).send(`**${moment().format('H:mm:ss')}** Erreur : ${error}`)
   console.log(error)
+});
 });
 
 Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the voiceStateUpdate event
