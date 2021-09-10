@@ -76,7 +76,6 @@ async function getFilesizeInBytes(filename) {
 
 async function play(guild) {
   var Songs = queue.get(guild.id);
-  console.log(Songs)
   var song = Songs[0];
     player.play(stream);
     player.on(Voice.AudioPlayerStatus.Idle, async () => {
