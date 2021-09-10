@@ -1,0 +1,27 @@
+{
+  "Name": "The SPcow 🐄 - Martinx",
+  "MemberCount": "31",
+  "ID": "785908407437099018",
+  "Logo": "https://cdn.discordapp.com/icons/785908407437099018/346baaeffe77f2714c38ea285780191b.webp?size=4096",
+  "Owner": "Tag : Wikigollum#1888 ; ID : 784818595200368685",
+  "Prefix": null,
+  "Category": "885965002136256542",
+  "Channels": {
+    "Message1": "885965061280116797",
+    "Message2": "885965062941061221",
+    "Voice": "885965064581042277",
+    "Logs": "885965066007117894",
+    "Role": "885965067030507571",
+    "Channel": "885965068305592361",
+    "Nickname": "885965070029447250",
+    "Clear": "885965071845560360",
+    "Infos": "885965074919993374",
+    "MemberCount": "885965138950246421"
+  },
+  "Custom": {
+    "Welcome_Ch": "829999245405716490",
+    "Welcome": "On",
+    "Left_Ch": "829999673246613514",
+    "Left": "On"
+  }
+}

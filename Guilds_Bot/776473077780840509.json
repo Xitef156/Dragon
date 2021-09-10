@@ -1,0 +1,27 @@
+{
+  "Name": "Communauté Dragon",
+  "MemberCount": "8",
+  "ID": "776473077780840509",
+  "Logo": "https://cdn.discordapp.com/icons/776473077780840509/de8a0f54bee6d06213bc9645debf01fd.webp?size=4096",
+  "Owner": "Tag : Xitef156#1822 ; ID : 776140752752869398",
+  "Prefix": null,
+  "Category": "885965000454340628",
+  "Channels": {
+    "Message1": "885965038391808090",
+    "Message2": "885965039931121735",
+    "Voice": "885965041323606036",
+    "Logs": "885965042913280070",
+    "Role": "885965044611952752",
+    "Channel": "885965047183056936",
+    "Nickname": "885965050865676349",
+    "Clear": "885965054367899648",
+    "Infos": "885965060017631283",
+    "MemberCount": "885965136513351701"
+  },
+  "Custom": {
+    "Welcome_Ch": null,
+    "Welcome": null,
+    "Left_Ch": null,
+    "Left": null
+  }
+}
