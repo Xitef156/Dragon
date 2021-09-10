@@ -1480,8 +1480,6 @@ if(message.content.startsWith(Prefix + `list`)){
 
             if(video){
               const New = new Discord.MessageEmbed()
-              const audio = ytdl(`https://youtu.be/${video.videoId}`, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
-              const stream = Voice.createAudioResource(audio)
               if (!Client.voice.adapters.get(message.guild.id)) {
                 New.setColor(Bot_Color)
               Voice.joinVoiceChannel({
@@ -1492,7 +1490,15 @@ if(message.content.startsWith(Prefix + `list`)){
           }
           else New.setColor(`#0xd677ff`)
           player.setMaxListeners(player.listenerCount() + 1)
+          function play() {
+            const audio = ytdl(`https://youtu.be/${video.videoId}`, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
+            const stream = Voice.createAudioResource(audio)
           player.play(stream)
+          player.on(Voice.AudioPlayerStatus.Idle, async () => {
+            if(db.get(`guild_${message.guild.id}_Music_Looping`) == true) play();
+          })
+        }
+        play()
             New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
             message.channel.send({ embeds : [New]})
           } else {
