@@ -8,7 +8,7 @@ const db = require('quick.db');
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
-const ffmpeg = require('fluent-ffmpeg');
+const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 const puppeteer = require('puppeteer');
@@ -226,7 +226,6 @@ async function Message(message){
   if(Message && Embeds_3) var and1 = ` et `
   if(Message && Attachment_2) var and1 = ` et `
   if(Embeds_3 && Attachment_2) var and2 = ` et `
-  console.log(Client.channels.cache.get(Channel).name)
     if(message.content.startsWith(Prefix)) Client.channels.cache.get(Ch_Cmd).send(`**${Time}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
     Client.channels.cache.get(Channel).send(`**${Time}** ${Channel_Type} : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`)
   }
