@@ -190,17 +190,9 @@ async function Message(message){
     if(message.channel.id === Ch_Cmd) return;
     if(message.channel.type == 'GUILD_PUBLIC_THREAD' || message.channel.type == 'GUILD_PRIVATE_THREAD') var Channel_Type = `Fil`
     else var Channel_Type = `Salon`
-    async function CHANN() {
-    if(message.channel.type == 'DM') var Chan = await 847579263988531210
-    else if(message.guild.id === 787081936719708221) var Chan = await 871919663670517780
-    else if(!Chan && Ch_Msg_1 !== 868950307848200202) var Chan = await Ch_Msg_1
-    if(!Chan) CHANN();
-    else return Chan;
-    }
-    const Channel = await CHANN();
-    async function check() {
-      if(!Channel) CHANN();
-      else {
+    if(message.channel.type == 'DM') var Channel = await 847579263988531210
+    if(message.guild.id === 787081936719708221) var Channel = await 871919663670517780
+    if(!Channel && Ch_Msg_1 !== 868950307848200202) var Channel = await Ch_Msg_1
     if(message.guild.id === Bot_Guild_ID && !message.content.startsWith(Prefix)) return;
       if (message.attachments.size > 0) {
         var Attachment_1 = message.attachments
@@ -234,11 +226,9 @@ async function Message(message){
   if(Message && Embeds_3) var and1 = ` et `
   if(Message && Attachment_2) var and1 = ` et `
   if(Embeds_3 && Attachment_2) var and2 = ` et `
+  console.log(Client.channels.cache.get(Channel).name)
     if(message.content.startsWith(Prefix)) Client.channels.cache.get(Ch_Cmd).send(`**${Time}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
     Client.channels.cache.get(Channel).send(`**${Time}** ${Channel_Type} : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`)
-      }
-      check();
-    }
   }
 
 function reset(guild) {
