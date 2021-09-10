@@ -13,23 +13,25 @@ const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 const puppeteer = require('puppeteer');
 var Download = require('image-downloader');
+const mc = require('mineflayer');
 
 const SC = new SoundCloud.Client();
+const Instent = Discord.Intents.FLAGS
 const Client = new Discord.Client({ intents: [
-  Discord.Intents.FLAGS.GUILDS,
-  Discord.Intents.FLAGS.GUILD_MESSAGES,
-  Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-  Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
-  Discord.Intents.FLAGS.DIRECT_MESSAGES,
-  Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-  Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING,
-  Discord.Intents.FLAGS.GUILD_MEMBERS,
-  Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-  Discord.Intents.FLAGS.GUILD_BANS,
-  Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-  Discord.Intents.FLAGS.GUILD_INVITES,
-  Discord.Intents.FLAGS.GUILD_INTEGRATIONS,
-  Discord.Intents.FLAGS.GUILD_WEBHOOKS
+  Instent.GUILDS,
+  Instent.GUILD_MESSAGES,
+  Instent.GUILD_MESSAGE_REACTIONS,
+  Instent.GUILD_MESSAGE_TYPING,
+  Instent.DIRECT_MESSAGES,
+  Instent.DIRECT_MESSAGE_REACTIONS,
+  Instent.DIRECT_MESSAGE_TYPING,
+  Instent.GUILD_MEMBERS,
+  Instent.GUILD_VOICE_STATES,
+  Instent.GUILD_BANS,
+  Instent.GUILD_EMOJIS_AND_STICKERS,
+  Instent.GUILD_INVITES,
+  Instent.GUILD_INTEGRATIONS,
+  Instent.GUILD_WEBHOOKS
 ],
 makeCache: Discord.Options.cacheWithLimits({
   MessageManager: 200, // This is default
@@ -76,6 +78,7 @@ async function getFilesizeInBytes(filename) {
 
 async function play(guild) {
   var Songs = queue.get(guild.id);
+  console.log(Songs)
   var song = Songs[0];
     player.play(stream);
     player.on(Voice.AudioPlayerStatus.Idle, async () => {
@@ -249,6 +252,8 @@ function reset(guild) {
 }
 
 Client.on(`ready`, async () => {
+  const Survival = mc.createBot({ host: 'ult4.falix.gg', port: 26400, password: 'Bellot99', username: `alexiswiiu@gmail.com`})
+  Survival.on('error', err => console.log(err))
   const upgraded = await ncu.run({
       packageFile: './package.json',
       upgrade: true,
@@ -872,10 +877,6 @@ Client.on('inviteDelete', async invite => {
 Client.on('messageCreate', async message => {
   const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
     const args = message.content.substring(Prefix.length).split(` `);
-    const Ch_MemberCount = db.get(`guild_${message.guild.id}_MemberCount`)
-    if(!Ch_MemberCount) return;
-const Gu = message.guild.memberCount;
-Client.channels.cache.get(Ch_MemberCount).setName(`Membres : ${Gu}`)
 
 await Message(message)
 
