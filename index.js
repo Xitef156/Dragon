@@ -251,9 +251,10 @@ function reset(guild) {
   db.set(`guild_${guild.id}_prefix`, obj.Prefix)
 }
 
+
+
+
 Client.on(`ready`, async () => {
-  const Survival = mc.createBot({ host: 'ult4.falix.gg', port: 26400, password: 'Bellot99', username: `alexiswiiu@gmail.com`})
-  Survival.on('error', err => console.log(err))
   const upgraded = await ncu.run({
       packageFile: './package.json',
       upgrade: true,
@@ -263,6 +264,28 @@ Client.on(`ready`, async () => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
+
+  const Survival = mc.createBot({ host: 'ult4.falix.gg', port: 26400, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
+  Survival.on('error', err => console.log(err))
+  Survival.on('login', async () => {
+    console.log(`Connected to Survival`)
+    Survival.chat(`Bonjour !`)
+    Survival.chat(`/gamemode spectator`)
+  })
+  Survival.on('kicked',async () => {
+    console.log(`Kick on Survival`)
+  })
+  const Creative = mc.createBot({ host: 'ult9.falix.gg', port: 18867, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
+  Creative.on('error', err => console.log(err))
+  Creative.on('login', async () => {
+    console.log(`Connected to Creative`)
+    Creative.chat(`Bonjour !`)
+    Creative.chat(`/gamemode spectator`)
+  })
+  Creative.on('kicked',async () => {
+    console.log(`Kick on Creative`)
+  })
+
   var date = moment().format('Do MMMM YYYY');
   Client.user.setActivity(`Prefix help ${date}`)
     await Client.guilds.cache.forEach(async guild => {
