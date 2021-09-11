@@ -264,7 +264,7 @@ Client.on(`ready`, async () => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
-
+  function surv() {
   const Survival = mc.createBot({ host: 'ult4.falix.gg', port: 26400, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
   Survival.on('error', err => console.log(err))
   Survival.on('login', async () => {
@@ -274,7 +274,10 @@ Client.on(`ready`, async () => {
   })
   Survival.on('kicked',async () => {
     console.log(`Kick on Survival`)
+    surv();
   })
+}
+function crea() {
   const Creative = mc.createBot({ host: 'ult9.falix.gg', port: 18867, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
   Creative.on('error', err => console.log(err))
   Creative.on('login', async () => {
@@ -284,10 +287,14 @@ Client.on(`ready`, async () => {
   })
   Creative.on('kicked',async () => {
     console.log(`Kick on Creative`)
+    crea();
   })
-
+}
+surv();crea();
+setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
-  Client.user.setActivity(`Prefix help ${date}`)
+  Client.user.setActivity(`${date}`)
+}, 30000);
     await Client.guilds.cache.forEach(async guild => {
       if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
       var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
