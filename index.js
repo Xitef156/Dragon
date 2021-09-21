@@ -14,6 +14,7 @@ const ncu = require('npm-check-updates');
 const puppeteer = require('puppeteer');
 var Download = require('image-downloader');
 const mc = require('mineflayer');
+const Streaming = require("discord-streaming");
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -264,33 +265,6 @@ Client.on(`ready`, async () => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
-  function surv() {
-  const Survival = mc.createBot({ host: 'ult4.falix.gg', port: 26400, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
-  Survival.on('error', err => console.log(err))
-  Survival.on('login', async () => {
-    console.log(`Connected to Survival`)
-    Survival.chat(`Bonjour !`)
-    Survival.chat(`/gamemode spectator`)
-  })
-  Survival.on('kicked',async () => {
-    console.log(`Kick on Survival`)
-    surv();
-  })
-}
-function crea() {
-  const Creative = mc.createBot({ host: 'ult9.falix.gg', port: 18867, password: 'Abigail081', username: `pnetoilk082@gmail.com`})
-  Creative.on('error', err => console.log(err))
-  Creative.on('login', async () => {
-    console.log(`Connected to Creative`)
-    Creative.chat(`Bonjour !`)
-    Creative.chat(`/gamemode spectator`)
-  })
-  Creative.on('kicked',async () => {
-    console.log(`Kick on Creative`)
-    crea();
-  })
-}
-surv();crea();
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
   Client.user.setActivity(`${date}`)
@@ -499,8 +473,7 @@ var Font_Size_2 = Font_Size_min;
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-
-  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) var attachment = `./Custom/Welcome/${member.id}.png`
+  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`./Custom/Welcome/${member.id}.png`]});
   else {
 	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
@@ -564,12 +537,9 @@ var Font_Size_2 = Font_Size_min;
 
 	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
 	ctx.drawImage(avatar, 25, 25, 200, 200);
-	var attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
-  console.log(canvas.toDataURL('image/png'))
-  fs.createWriteStream(canvas.toDataURL('image/png'), `./Custom/Welcome/${member.id}.png`)
-  }
-
+	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
 	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
+  }
 }
 });
 
@@ -617,7 +587,7 @@ var Font_Size_2 = Font_Size_min;
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) var attachment = `./Custom/Left/${member.id}.png`
+  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`./Custom/Left/${member.id}.png`]});
   else {
 
 	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
@@ -685,11 +655,10 @@ var Font_Size_2 = Font_Size_min;
 	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
 	ctx.drawImage(avatar, 25, 25, 200, 200);
 
-	var attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'left-image.png');
+	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'left-image.png');
   fs.createWriteStream(`./Custom/Left/${member.id}.jpg`, canvas.toDataURL())
-  }
-
 	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
+  }
 }
 });
 
@@ -1490,10 +1459,21 @@ if(message.content.startsWith(Prefix + `list`)){
   }
 
     if(message.content == Prefix + `join`){
-      const voiceChannel = message.member.voice.channel
-      if(!voiceChannel) return message.channel.send(`Tu n\'es pas en vocal`)
-      else voiceChannel.join()
-    }
+      if(!message.member.voice.channel.id) return message.channel.send(`Je ne suis n\'es pas en vocal`)
+      const voiceChannel = Client.voice.adapters.get(message.guild.id)
+      if (!Client.voice.adapters.get(message.guild.id)) {
+      Voice.joinVoiceChannel({
+        channelId: message.member.voice.channel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator
+    }).subscribe(player)
+    Streaming(Client, {
+      "787081936719708221" : {
+        live :  "STREAM LIVE"
+      }
+    });
+  }
+}
 
     if(message.content.startsWith(Prefix)){
       var args2 = message.content.substring(Prefix.length).split(" ");
