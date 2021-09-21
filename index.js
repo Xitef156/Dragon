@@ -13,8 +13,6 @@ const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 const puppeteer = require('puppeteer');
 var Download = require('image-downloader');
-const mc = require('mineflayer');
-const Streaming = require("discord-streaming");
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
