@@ -1367,6 +1367,7 @@ if(message.content.startsWith(Prefix + `list`)){
             if(db.get(`guild_${message.guild.id}_Music_Looping`) == true) play();
           })
         }
+        play()
             New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
             message.channel.send({ embeds : [New]})
           } else {
@@ -1463,3 +1464,4 @@ if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex
 });
 
 Client.login(process.env.Token)
+
