@@ -13,6 +13,8 @@ const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 const puppeteer = require('puppeteer');
 var Download = require('image-downloader');
+const mc = require('mineflayer');
+const Streaming = require("discord-streaming");
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -47,7 +49,6 @@ const CreatorID = '776140752752869398'
 const Charlotte_Tag = `charlotte_lbc#8842`
 const AuthifCreator = `message.author.id === ${CreatorID}`
 const AuthifNotCreator = `message.author.id !== ${CreatorID}`
-const Youtube_Guild_ID = '776473077780840509'
 const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
@@ -71,26 +72,7 @@ function makeid(length) {
 }
 async function getFilesizeInBytes(filename) { 
   var File = await fs.statSync(filename)
-  var Size = File.size
-  return Size;
-}
-
-async function play(guild) {
-  var Songs = queue.get(guild.id);
-  console.log(Songs)
-  var song = Songs[0];
-    player.play(stream);
-    player.on(Voice.AudioPlayerStatus.Idle, async () => {
-      if(db.get(`guild_${guild.id}_Music_Looping`) === true) return play(guild);
-      else {
-        await Songs.shift();
-  if (!Songs[0]) {
-    Voice.getVoiceConnection(guild.id).disconnect();
-    queue.delete(guild.id);
-    return;
-  } else play(guild);
-}
-    })
+  return File.size;
 }
 
 function remSpCh(sentence) {
@@ -172,6 +154,83 @@ async function guild_create(guild) {
     })
   })
 }
+async function canvas_card(member, type, color, color1, color2){
+  var Font_Size_1 = Font_Size_max
+  var Font_Size_2 = Font_Size_min
+  if(type == `Left`) var x = ` 2`
+  else var x = ``
+  const applyText = (canvas, text) => {
+      const ctx = canvas.getContext('2d');
+      do ctx.font = `${Font_Size_1 -= 10}px ${Font}`;
+      while (ctx.measureText(text).width > canvas.width - 300);
+      return ctx.font;
+  };
+  
+	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
+	const ctx = canvas.getContext('2d');
+	const background = await Canvas.loadImage(`./wallpaper${x}.png`);
+	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+  var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grd.addColorStop(0, color);
+  grd.addColorStop(1, `#ffffff`);
+	ctx.strokeStyle = grd;
+  ctx.lineWidth = 5;
+	ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+	ctx.font = `${Font_Size_2}px ${Font}`;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = color1;
+	ctx.fillStyle = color2;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 5;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+	ctx.fillText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.78125;
+  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
+  ctx.globalAlpha = 1;
+
+	ctx.font = applyText(canvas, `${member.displayName}!`);
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = '#bb0000';
+  ctx.strokeStyle = '#ffffff';
+	ctx.fillStyle = '#ff0000';
+  ctx.lineWidth = 8;
+  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
+	ctx.fillText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.25;
+  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
+
+  
+  ctx.globalAlpha = 1;
+	ctx.beginPath();
+  var grd2 = ctx.createLinearGradient(0, 0, 200, 0);
+  grd2.addColorStop(0, `#ff0f00`);
+  grd2.addColorStop(0.17, `#ff5100`);
+  grd2.addColorStop(0.34, `#f3ff00`);
+  grd2.addColorStop(0.53, `#32ff00`);
+  grd2.addColorStop(0.72, `#00f7ff`);
+  grd2.addColorStop(0.85, `#0004ff`);
+  grd2.addColorStop(1, `#7c00ff`);
+	ctx.arc(125, 125, 100, 0, Math.PI * 2);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = grd2
+  ctx.stroke();
+	ctx.closePath();
+	ctx.clip();
+
+	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
+	ctx.drawImage(avatar, 25, 25, 200, 200);
+	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), `${type}-image.png`);
+  return attachment;
+}
 
 async function Message(message){
   const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
@@ -231,27 +290,6 @@ async function Message(message){
     if(message.content.startsWith(Prefix)) Client.channels.cache.get(Ch_Cmd).send(`**${Time}** **${message.author.tag}** a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
     Client.channels.cache.get(Channel).send(`**${Time}** ${Channel_Type} : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`)
   }
-
-function reset(guild) {
-  db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
-  db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
-  db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
-  db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
-  db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
-  db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
-  db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
-  db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
-  db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
-  db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
-  db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
-  db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
-  db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
-  db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
-  db.set(`guild_${guild.id}_prefix`, obj.Prefix)
-}
-
-
-
 
 Client.on(`ready`, async () => {
   const upgraded = await ncu.run({
@@ -326,37 +364,21 @@ setInterval(() => {
 });
 
 Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the voiceStateUpdate event
+  var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
+  var newChannel = `${newState.channel} (**${newState.channel.name}**)`
   const Ch_Voice = db.get(`guild_${oldState.guild.id}_Voice`)
   var User = `${oldState.member.toString()} (**${oldState.member.user.tag}**)`
   if(newState.member.id == `688327045129699400`) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.member.id == CreatorID) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
-  if(newState.channel === null) {                                         // Disconnect
-    var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
-  Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} déconnecté à ${oldChannel}.`);
-  } else if(oldState.channel === null){                                   // Connect
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} connecté à ${newChannel}.`);
-  } else if (oldState.selfDeaf === false && newState.selfDeaf === true) { // Sourdine
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est mit en sourdine dans ${newChannel}.`);
-  } else if (oldState.selfDeaf === true && newState.selfDeaf === false) { // Dé-sourdine
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} n'est plus en sourdine dans ${newChannel}.`);
-  } else if (oldState.selfMute === false && newState.selfMute === true) { // Mute
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est mute dans ${newChannel}.`);
-  } else if (oldState.selfMute === true && newState.selfMute === false) { // Dé-mute
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-    Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} s'est demute dans ${newChannel}.`);
-  } else if (oldState.channel !== newState.channel){                      // Move
-    var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
-    var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-  Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} à été move de ${oldChannel} à ${newChannel}.`);
-} else {
-  var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
-  var newChannel = `${newState.channel} (**${newState.channel.name}**)`
-      Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} est mute/demute dans ${oldChannel} à ${newChannel} par un admin.`);
-    }
+  if(newState.channel === null) var event = `déconnecté à ${oldChannel}`                                                      // Disconnect
+  else if(oldState.channel === null) var event = `connecté à ${oldChannel}`                                                   // Connect
+  else if (oldState.selfDeaf === false && newState.selfDeaf === true) var event = `s'est mit en sourdine dans ${newChannel}`  // Sourdine
+  else if (oldState.selfDeaf === true && newState.selfDeaf === false) var event = `n'est plus en sourdine dans ${newChannel}` // Dé-sourdine
+  else if (oldState.selfMute === false && newState.selfMute === true) var event = `s'est mute dans ${newChannel}`             // Mute
+  else if (oldState.selfMute === true && newState.selfMute === false) var event = `s'est demute dans ${newChannel}`           // Dé-mute
+  else if (oldState.channel !== newState.channel) var event = `à été move de ${oldChannel} à ${newChannel}`                   // Move
+  else var event = `est mute/demute dans ${oldChannel} à ${newChannel} par un admin.`                                         // Admin
+  Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} ${event}`);
 });
 
 Client.on('threadCreate', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil créer : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
@@ -441,8 +463,6 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
 });
 
 Client.on(`guildMemberAdd`, async member => {
-var Font_Size = Font_Size_max;
-var Font_Size_2 = Font_Size_min;
   if(db.get(`guild_${member.guild.id}_MemberCount`)){
 
   const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
@@ -455,17 +475,9 @@ var Font_Size_2 = Font_Size_min;
   const Ch_Logs = db.get(`guild_${member.guild.id}_Logs`)
   Client.channels.cache.get(Ch_Logs).send(`**${moment(member.joinedAt).format('H:mm:ss')}** **${member.user.tag}** est arrivé dans **${member.guild.name}**`)
 
-    const applyText = (canvas, text) => {
-        const ctx = canvas.getContext('2d');
-        do ctx.font = `${Font_Size -= 10}px ${Font}`;
-        while (ctx.measureText(text).width > canvas.width - 300);
-        return ctx.font;
-    };
-
     var Welcome = db.get(`guild_${member.guild.id}_Memberwelcome`)
     if(Welcome == `Off`) return;
     if(Welcome == `On`){
-
     if(!db.get(`guild_${member.guild.id}_MemberAdd`)) return;
   const mdr = db.get(`guild_${member.guild.id}_MemberAdd`)
   const channel = Client.channels.cache.get(mdr);
@@ -473,77 +485,13 @@ var Font_Size_2 = Font_Size_min;
 	if (!channel) return;
   if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`./Custom/Welcome/${member.id}.png`]});
   else {
-	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
-	const ctx = canvas.getContext('2d');
-	const background = await Canvas.loadImage('./wallpaper.png');
-	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-  var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  grd.addColorStop(0, `#00fbff`);
-  grd.addColorStop(1, `#ffffff`);
-	ctx.strokeStyle = grd;
-  ctx.lineWidth = 5;
-	ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-	ctx.font = `${Font_Size_2}px ${Font}`;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-  ctx.shadowBlur = 5;
-  ctx.shadowColor = '#53dad8';
-	ctx.fillStyle = `#0c00ff`;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 5;
-  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-	ctx.fillText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 0.78125;
-  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-  ctx.globalAlpha = 1;
-
-	ctx.font = applyText(canvas, `${member.displayName}!`);
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-  ctx.shadowBlur = 5;
-  ctx.shadowColor = '#bb0000';
-  ctx.strokeStyle = '#ffffff';
-	ctx.fillStyle = '#ff0000';
-  ctx.lineWidth = 8;
-  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-	ctx.fillText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.25;
-  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-
-  
-  ctx.globalAlpha = 1;
-	ctx.beginPath();
-  var grd2 = ctx.createLinearGradient(0, 0, 200, 0);
-  grd2.addColorStop(0, `#ff0f00`);
-  grd2.addColorStop(0.17, `#ff5100`);
-  grd2.addColorStop(0.34, `#f3ff00`);
-  grd2.addColorStop(0.53, `#32ff00`);
-  grd2.addColorStop(0.72, `#00f7ff`);
-  grd2.addColorStop(0.85, `#0004ff`);
-  grd2.addColorStop(1, `#7c00ff`);
-	ctx.arc(125, 125, 100, 0, Math.PI * 2);
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = grd2
-  ctx.stroke();
-	ctx.closePath();
-	ctx.clip();
-
-	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
-	ctx.drawImage(avatar, 25, 25, 200, 200);
-	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
+    const attachment = await canvas_card(member, `Welcome`, `#00fbff`, `#53dad8`, `#0c00ff`)
 	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
   }
 }
 });
 
 Client.on(`guildMemberRemove`, async member => {
-var Font_Size = Font_Size_max;
-var Font_Size_2 = Font_Size_min;
   if(db.get(`guild_${member.guild.id}_MemberCount`)){
   const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
 
@@ -568,14 +516,6 @@ var Font_Size_2 = Font_Size_min;
 	if (target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${executor.tag}**`);
 	else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, rien n'a été trouvé.`);
 
-    const applyText = (canvas, text) => {
-        const ctx = canvas.getContext('2d');
-    
-        do ctx.font = `${Font_Size -= 10}px ${Font}`;
-        while (ctx.measureText(text).width > canvas.width - 300);
-    
-        return ctx.font;
-    };
     var Left = db.get(`guild_${member.guild.id}_Memberleft`)
     if(Left == `Off`) return;
     if(Left == `On`){
@@ -587,74 +527,7 @@ var Font_Size_2 = Font_Size_min;
 	if (!channel) return;
   if(fs.existsSync(`./Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`./Custom/Left/${member.id}.png`]});
   else {
-
-	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
-	const ctx = canvas.getContext('2d');
-
-	const background = await Canvas.loadImage('./wallpaper 2.png');
-	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-	var grd1 = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  grd1.addColorStop(0, `#ff0f00`);
-  grd1.addColorStop(1, `#ffffff`);
-	ctx.strokeStyle = grd1;
-  ctx.lineWidth = 5;
-	ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-	ctx.font = `${Font_Size_2}px ${Font}`;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-  ctx.shadowBlur = 5;
-  ctx.shadowColor = '#bb0000';
-	ctx.fillStyle = `#ff2e00`;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 5;
-  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-	ctx.fillText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 0.78125;
-  ctx.strokeText(`${member.user.tag}`, canvas.width - 450, canvas.height - 25);
-  ctx.globalAlpha = 1;
-
-	ctx.font = applyText(canvas, `${member.displayName}!`);
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-  ctx.shadowBlur = 5;
-  ctx.shadowColor = '#bb0000';
-  ctx.strokeStyle = '#ffffff';
-	ctx.fillStyle = '#ff0000';
-  ctx.lineWidth = 8;
-  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-	ctx.fillText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.25;
-  ctx.strokeText(`${member.displayName}`, canvas.width - 450, canvas.height / 1.75);
-
-  
-  ctx.globalAlpha = 1;
-	ctx.beginPath();
-  var grd2 = ctx.createLinearGradient(0, 0, 200, 0);
-  grd2.addColorStop(0, `#ff0f00`);
-  grd2.addColorStop(0.17, `#ff5100`);
-  grd2.addColorStop(0.34, `#f3ff00`);
-  grd2.addColorStop(0.53, `#32ff00`);
-  grd2.addColorStop(0.72, `#00f7ff`);
-  grd2.addColorStop(0.85, `#0004ff`);
-  grd2.addColorStop(1, `#7c00ff`);
-	ctx.arc(125, 125, 100, 0, Math.PI * 2);
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = grd2
-  ctx.stroke();
-	ctx.closePath();
-	ctx.clip();
-
-	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg', size: 4096 }));
-	ctx.drawImage(avatar, 25, 25, 200, 200);
-
-	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'left-image.png');
-  fs.createWriteStream(`./Custom/Left/${member.id}.jpg`, canvas.toDataURL())
+    const attachment = await canvas_card(member, `Left`, `#ff0000`, `#ff2e00`, `#ff5d00`)
 	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
   }
 }
@@ -717,6 +590,7 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
   const Embed = new Discord.MessageEmbed()
   const Embed_2 = new Discord.MessageEmbed()
   Embed.setColor('#42ff00')
+  .setTimestamp()
   Embed_2.setColor('#42ff00')
   Embed_2.addField(`Nom`, newGuild.name)
   Embed_2.addField(`Icon`, newGuild.iconURL({size: 4096}))
@@ -729,7 +603,6 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
   if(oldGuild.name !== newGuild.name){
   Embed.addField(`Nouveau Nom`, newGuild.name)
   .addField(`Ancien Nom`, oldGuild.name)
-  .setTimestamp()
   .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
   Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
   } else if(oldGuild.icon !== newGuild.icon){
@@ -737,7 +610,6 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
     .setImage(newGuild.iconURL({size: 4096}))
     .addField(`Ancienne Icon`, oldGuild.iconURL({size: 4096}))
     .setImage(oldGuild.iconURL({size: 4096}))
-    .setTimestamp()
     .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
     Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
     }
@@ -747,7 +619,6 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
       newGuild.fetch(newGuild.ownerId)
       Embed.addField(`Nouveau gérant`, creator2.toString())
       .addField(`Ancien gérant`, creator.toString())
-      .setTimestamp()
       .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
       Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
       }
@@ -886,10 +757,7 @@ await Message(message)
       if(args[1] === `,`) db.delete(`guild_${message.guild.id}_prefix`)
       db.set(`guild_${message.guild.id}_prefix`, args[1])
       message.channel.send(`Le nouveau prefix est ${args[1]}`)
-      let P_guild = message.guild.name
-      let P_author = message.author.tag
-      let P_owner = message.guild.owner
-      P_owner.send(`Dans votre serveur : **${P_guild}**, **${P_author}** a changé le prefix en : *${args[1]}* . Notez-le`)
+      message.guild.owner.send(`Dans votre serveur : **${message.guild.name}**, **${message.author.tag}** a changé le prefix en : *${args[1]}* . Notez-le`)
     }
 const command = args.shift().toLowerCase()
 
@@ -1458,18 +1326,12 @@ if(message.content.startsWith(Prefix + `list`)){
 
     if(message.content == Prefix + `join`){
       if(!message.member.voice.channel.id) return message.channel.send(`Je ne suis n\'es pas en vocal`)
-      const voiceChannel = Client.voice.adapters.get(message.guild.id)
       if (!Client.voice.adapters.get(message.guild.id)) {
       Voice.joinVoiceChannel({
         channelId: message.member.voice.channel.id,
         guildId: message.guild.id,
         adapterCreator: message.guild.voiceAdapterCreator
     }).subscribe(player)
-    Streaming(Client, {
-      "787081936719708221" : {
-        live :  "STREAM LIVE"
-      }
-    });
   }
 }
 
@@ -1507,7 +1369,6 @@ if(message.content.startsWith(Prefix + `list`)){
             if(db.get(`guild_${message.guild.id}_Music_Looping`) == true) play();
           })
         }
-        play()
             New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
             message.channel.send({ embeds : [New]})
           } else {
