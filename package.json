@@ -1,4 +1,9 @@
 {
+  "name": "Dragon_Bot",
+  "version": "1.0.0",
+  "description": "The Dragon Bot by Xitef156",
+  "author": "Xitef156",
+  "main": "index.js",
   "dependencies": {
     "@discordjs/opus": "^0.6.0",
     "@discordjs/voice": "^0.6.0",
@@ -22,8 +27,5 @@
   },
   "scripts": {
     "start": "node index.js"
-  },
-  "engines": {
-    "node": "^16.x.x"
   }
 }
