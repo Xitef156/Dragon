@@ -11,7 +11,6 @@ const SoundCloud = require('soundcloud-scraper');
 const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
-const puppeteer = require('puppeteer');
 var Download = require('image-downloader');
 
 const SC = new SoundCloud.Client();
@@ -113,9 +112,7 @@ async function guild_create(guild) {
     Guild.channels.create(name, {
       type: 'GUILD_TEXT',
       parent: Category
-      }).then(DB => {
-        db.set(`guild_${guild.id}_${name}`, DB.id)
-      })
+      }).then(DB => db.set(`guild_${guild.id}_${name}`, DB.id))
   }
   await text_create('Message-1')
   await text_create('Message-2')
