@@ -1,9 +1,10 @@
 {
-  "name": "Dragon_Bot",
+  "name": "dragonbot",
   "version": "1.0.0",
-  "description": "The Dragon Bot by Xitef156",
-  "author": "Xitef156",
+  "description": "",
   "main": "index.js",
+  "author": "Xitef156",
+  "license": "ISC",
   "dependencies": {
     "@discordjs/opus": "^0.6.0",
     "@discordjs/voice": "^0.6.0",
@@ -23,7 +24,7 @@
     "weather-js": "^2.0.0",
     "yt-search": "^2.10.1",
     "ytdl-core": "^4.9.1",
-    "ffmpeg-static": "^4.4.0",
+    "ffmpeg-static": "^4.4.0"
   },
   "scripts": {
     "start": "node index.js"
