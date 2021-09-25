@@ -1,7 +1,7 @@
 FROM node:latest
-WORKDIR ./app
-COPY ./ ./app
-RUN npm install nodemon -g
-COPY ./ ./app
+WORKDIR usr/srv/app
+COPY package*.json ./
+RUN npm install
+COPY . .
 EXPOSE 8080
 CMD [ "npm", "start" ]
