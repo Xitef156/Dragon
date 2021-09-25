@@ -1,6 +1,7 @@
 FROM node:latest
+WORKDIR /usr/src/app
+COPY package.json ./
 RUN npm install nodemon -g
-WORKDIR /app
-ADD . /app
-EXPOSE 3000
-CMD ["npm", "start"] 
+COPY . .
+EXPOSE 8080
+CMD [ "node", "index.js" ]
