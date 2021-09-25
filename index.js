@@ -84,6 +84,42 @@ function sleep(s) {
   });
 }
 
+async function play(guild){
+  var Songs = queue.get(guild)
+  var Song = Songs[0];
+  if (!Song) {
+    Voice.getVoiceConnection(guild).disconnect();
+    queue.delete(guild.id);
+    return;
+  }
+  async function Audio(song){
+  if(song.type = 'sc') SC.getSongInfo(song.url).then(async Song => {
+    await Song.downloadProgressive().then(stream => Play(stream))
+  }) 
+  else {
+    var Stream = await ytdl(`https://youtu.be/${song.id}`, { volume: db.get(`guild_${guild}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
+    Play(Stream);
+  }
+}
+Audio(Song)
+  async function Play(stream){
+  var Stream = await Voice.createAudioResource(stream)
+player.play(Stream)
+player.on(Voice.AudioPlayerStatus.Idle, async () => {
+  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
+  else {
+    await Songs.shift();
+  if (!Song) {
+    Voice.getVoiceConnection(guild).disconnect();
+    queue.delete(guild.id);
+    return;
+  }
+  play(guild);
+  }
+})
+  }
+}
+
 function youtube_parser(url){
   var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
   var match = url.match(regExp);
@@ -112,7 +148,9 @@ async function guild_create(guild) {
     Guild.channels.create(name, {
       type: 'GUILD_TEXT',
       parent: Category
-      }).then(DB => db.set(`guild_${guild.id}_${name}`, DB.id))
+      }).then(DB => {
+        db.set(`guild_${guild.id}_${name}`, DB.id)
+      })
   }
   await text_create('Message-1')
   await text_create('Message-2')
@@ -359,20 +397,18 @@ setInterval(() => {
 });
 
 Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the voiceStateUpdate event
-  var oldChannel = `${oldState.channel} (**${oldState.channel.name}**)`
-  var newChannel = `${newState.channel} (**${newState.channel.name}**)`
   const Ch_Voice = db.get(`guild_${oldState.guild.id}_Voice`)
   var User = `${oldState.member.toString()} (**${oldState.member.user.tag}**)`
   if(newState.member.id == `688327045129699400`) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.member.id == CreatorID) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
-  if(newState.channel === null) var event = `déconnecté à ${oldChannel}`                                                      // Disconnect
-  else if(oldState.channel === null) var event = `connecté à ${oldChannel}`                                                   // Connect
-  else if (oldState.selfDeaf === false && newState.selfDeaf === true) var event = `s'est mit en sourdine dans ${newChannel}`  // Sourdine
-  else if (oldState.selfDeaf === true && newState.selfDeaf === false) var event = `n'est plus en sourdine dans ${newChannel}` // Dé-sourdine
-  else if (oldState.selfMute === false && newState.selfMute === true) var event = `s'est mute dans ${newChannel}`             // Mute
-  else if (oldState.selfMute === true && newState.selfMute === false) var event = `s'est demute dans ${newChannel}`           // Dé-mute
-  else if (oldState.channel !== newState.channel) var event = `à été move de ${oldChannel} à ${newChannel}`                   // Move
-  else var event = `est mute/demute dans ${oldChannel} à ${newChannel} par un admin.`                                         // Admin
+  if(newState.channel === null) var event = `déconnecté à ${oldState.channel} (**${oldState.channel.name}**)`                                                      // Disconnect
+  else if(oldState.channel === null) var event = `connecté à ${oldState.channel} (**${oldState.channel.name}**)`                                                   // Connect
+  else if (oldState.selfDeaf === false && newState.selfDeaf === true) var event = `s'est mit en sourdine dans ${newState.channel} (**${newState.channel.name}**)`  // Sourdine
+  else if (oldState.selfDeaf === true && newState.selfDeaf === false) var event = `n'est plus en sourdine dans ${newState.channel} (**${newState.channel.name}**)` // Dé-sourdine
+  else if (oldState.selfMute === false && newState.selfMute === true) var event = `s'est mute dans ${newState.channel} (**${newState.channel.name}**)`             // Mute
+  else if (oldState.selfMute === true && newState.selfMute === false) var event = `s'est demute dans ${newState.channel} (**${newState.channel.name}**)`           // Dé-mute
+  else if (oldState.channel !== newState.channel) var event = `à été move de ${oldState.channel} (**${oldState.channel.name}**) à ${newState.channel} (**${newState.channel.name}**)`                   // Move
+  else var event = `est mute/demute dans ${oldState.channel} (**${oldState.channel.name}**) à ${newState.channel} (**${newState.channel.name}**) par un admin.`                                         // Admin
   Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} ${event}`);
 });
 
@@ -837,16 +873,16 @@ if(message.content.startsWith(Prefix + `set`)){
       const Embed = new Discord.MessageEmbed()
       Embed.setColor(Bot_Color)
       Embed.setAuthor(`Créateur : ${CreatorTag}`, Client.users.cache.get(CreatorID).avatarURL({ dynamic: true, size: 4096}))
-      Embed.setTitle(`Les commandes du bot (certaines peuvent être activés en message privé)`)
+      Embed.setTitle(`Les commandes du bot (certaines peuvent être activés en message privé_)`)
       Embed.addField(`${Prefix}prefix`, `Change le prefix du bot pour le serveur`, true)
       Embed.addField(`${Prefix}stat`, `Statistiques du joueur`, true)
       Embed.addField(`${Prefix}role`, `Créer un changement pour les roles dans le serveur`, true)
       Embed.addField(`${Prefix}join`, `Le bot vient dans votre vocal`, true)
-      Embed.addField(`${Prefix}leave`, `(bug) Le bot quitte votre vocal`, true)
-      Embed.addField(`${Prefix}play`, `(bug) Le bot joue de la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}skip`, `(bug) Le bot passe la musique dans votre vocal`, true)
+      Embed.addField(`${Prefix}leave`, `Le bot quitte votre vocal`, true)
+      Embed.addField(`${Prefix}play`, `Le bot joue de la musique dans votre vocal`, true)
+      Embed.addField(`${Prefix}skip`, `Le bot passe la musique dans votre vocal`, true)
       Embed.addField(`${Prefix}loop`, `Le bot joue en boucle la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}queue`, `(bug) Montre la liste des musiques du serveur`, true)
+      Embed.addField(`${Prefix}queue`, `Montre la liste des musiques du serveur`, true)
       Embed.addField(`${Prefix}volume`, `Modifie le volume dans votre vocal (à la fin de la musique en cours)`, true)
       Embed.addField(`${Prefix}membercount`, `Affiche le nombre de joueur sur le serveur`, true)
       Embed.addField(`${Prefix}invite`, `Donne en mp l'url du bot/serveur`, true)
@@ -854,11 +890,12 @@ if(message.content.startsWith(Prefix + `set`)){
       Embed.addField(`${Prefix}kick`, `Permet de Kick le joueur mentionné du serveur`, true)
       Embed.addField(`${Prefix}clear`, `Retire les messages du salon`, true)
       Embed.addField(`${Prefix}pres`, `Présente le bot`, true)
-      Embed.addField(`${Prefix}maths`, `Fait des maths`, true)
-      Embed.addField(`${Prefix}say`, `Fait parler le bot`, true)
+      Embed.addField(`${Prefix}maths_`, `Fait des maths`, true)
+      Embed.addField(`${Prefix}say_`, `Fait parler le bot`, true)
       Embed.addField(`${Prefix}set`, `Paramètre le bot`, true)
       Embed.addField(`${Prefix}view`, `Vois les paramètres de bot`, true)
-      Embed.addField(`${Prefix}download`, `Télécharge votre musique/vidéo (Youtube et Soundcloud)`, true)
+      Embed.addField(`${Prefix}download_`, `Télécharge votre musique/vidéo (Youtube et Soundcloud)`, true)
+      Embed.addField(`${Prefix}search_`, `Cherche votre musique/vidéo (Youtube et Soundcloud)`, true)
         message.channel.send({ embeds: [Embed]})
     }
 
@@ -889,12 +926,22 @@ if(message.content.startsWith(Prefix + `set`)){
     else var Location = `/Others/`
     var Code = makeid(10)
     var Title = remSpCh(`${message.author.tag} - ${Code}`)
-
-    if(message.content.includes(`soundcloud.com`)) {
-      if(args[0].includes(`?in=`) || args[0].split(`/`).length - 1 > 5) var Args = args[0].substring(0, args[0].indexOf(`?in=`)) 
-      else var Args = args[0]
-          SC.getSongInfo(Args).then(async song => {
-            message.channel.send(`Téléchargement de **${song.title}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
+    if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
+      var ARGS = args.join(` `).replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
+      if(message.content.includes(`soundcloud.com`)) var type = true
+      else var type = false
+        if(type == true){
+          if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
+          else var Args = ARGS.replace(' ', '')
+          console.log(Args)
+          SC.getSongInfo(Args).then(song => download(song))
+        } else {
+          SC.search(ARGS).then(Song => {
+            SC.getSongInfo(Song[0].url).then(song => download(song))
+          })
+        }
+        async function download(song){
+            message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
             if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
             var File = `./Download${Location}MP3/${Title}.mp3`
             const url = song.thumbnail
@@ -904,7 +951,6 @@ if(message.content.startsWith(Prefix + `set`)){
         }
         Download.image(options)
               const stream = await song.downloadProgressive();
-              console.log(stream)
               const writer = stream.pipe(fs.createWriteStream(File));
               writer.on("finish", () => {
         db.set(`Title1_${Code}`, song.title)
@@ -916,8 +962,8 @@ if(message.content.startsWith(Prefix + `set`)){
         db.set(`Code_Image_${Code}`, `./Download/${song.id}.png`)
         db.set(`Format`, 3)
         ChangeFile()
-      });
-  })
+              })
+            }
 } else {
       var format = `4`
     if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
@@ -1335,36 +1381,87 @@ if(message.content.startsWith(Prefix + `list`)){
     const voiceChannel = message.member.voice.channel
     switch (args2[0].toLowerCase()) {
       case "play":
-        var Songs = queue.get(message.guild.id);
   if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
   const permissions = message.member.voice.channel.permissionsFor(message.member.user);
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
   await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
+
+  if(args.includes(`soundcloud`) || args.includes(`sc`)){
+
+    SC.search(args.join(` `).replace('soundcloud', ''), 'track').then(async Song => {
+
+      SC.getSongInfo(Song[0].url).then(async song => {
+
+      const New = new Discord.MessageEmbed()
+      if (!Client.voice.adapters.get(message.guild.id)) {
+      Voice.joinVoiceChannel({
+        channelId: message.member.voice.channel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator
+    }).subscribe(player)
+  }
+      var SONG = {
+        type: 'sc',
+        title: song.title,
+        url: song.url,
+        author: {
+          name: song.author.name,
+          url: song.author.url
+        },
+        url: song.url,
+        duration: song.duration,
+      };
+      var Songs = queue.get(message.guild.id);
+      if (!Songs) {
+        var Songs = [];
+        queue.set(message.guild.id, Songs);
+        Songs.push(SONG);
+        New.setColor('#ff5d00')
+        play(message.guild.id)
+      } else {
+        Songs.push(SONG);
+        New.setColor('FUCHSIA')
+      }
+        New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
+        message.channel.send({ embeds : [New]})
+    })
+  })
+  } else {
             const video = await videoFinder(args.join(' '));
 
             if(video){
               const New = new Discord.MessageEmbed()
+              var song = {
+                type: 'ytb',
+                id: video.videoId,
+                title: video.title,
+                url: video.url,
+                author: {
+                  name: video.author.name,
+                  url: video.author.url
+                },
+                url: video.url,
+                duration: video.timestamp,
+              };
+              if (!Songs) {
+                var Songs = [];
+                queue.set(message.guild.id, Songs);
+                Songs.push(song);
+                play(message.guild.id)
+              } else {
+                Songs.push(song);
+                New.setColor(`#0xd677ff`)
+              }
               if (!Client.voice.adapters.get(message.guild.id)) {
-                New.setColor(Bot_Color)
+                New.setColor('RED')
               Voice.joinVoiceChannel({
                 channelId: message.member.voice.channel.id,
                 guildId: message.guild.id,
                 adapterCreator: message.guild.voiceAdapterCreator
             }).subscribe(player)
           }
-          else New.setColor(`#0xd677ff`)
-          player.setMaxListeners(player.listenerCount() + 1)
-          function play() {
-            const audio = ytdl(`https://youtu.be/${video.videoId}`, { volume: db.get(`guild_${message.guild.id}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
-            const stream = Voice.createAudioResource(audio)
-          player.play(stream)
-          player.on(Voice.AudioPlayerStatus.Idle, async () => {
-            if(db.get(`guild_${message.guild.id}_Music_Looping`) == true) play();
-          })
-        }
-        play()
             New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
             message.channel.send({ embeds : [New]})
           } else {
@@ -1372,6 +1469,7 @@ if(message.content.startsWith(Prefix + `list`)){
                    queue.delete(message.guild.id);
                    return;
                  }
+                }
                  break;
                  case "leave":
   if(!voiceChannel) return message.channel.send(`Tu dois être dans un vocal`);
@@ -1385,8 +1483,8 @@ if(message.content.startsWith(Prefix + `list`)){
           await Voice.getVoiceConnection(message.guild.id).disconnect();
           return message.channel.send(`Il y a rien a skip`)
         } else {
-          await Songs.shift()
-          play(message.guild)
+          await player.stop()
+          play(message.guild.id)
         }
   message.channel.send(`Skipped !`)
   break;
@@ -1396,8 +1494,8 @@ if(message.content.startsWith(Prefix + `list`)){
               const Queue = new Discord.MessageEmbed()
               .setColor(`#00ffff`)
               .setTitle(`Queue de ${message.guild.name}`)
-              .setDescription(Songs.map((song, index) => `${index} : [${song.title}](https://www.youtu.be/${song.id}) de [${song.author.name}](${song.author.url}) ; ${song.duration}`))
-              message.channel.send({ embeds: [Queue]})
+              await Songs.forEach((song, index) => Queue.addField(`${index}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
+              await message.channel.send({ embeds: [Queue]})
   break;
                 }
     }
@@ -1425,15 +1523,32 @@ if(message.content == Prefix + `left`){
 if(message.content.startsWith(Prefix + `search`)){
   if(!isNaN(args[0]) && !args[0]) message.channel.send(`Tu peux indiquer le nombre de résultat`)
   if(!args) return message.channel.send(`Tu doit indiquer ce que tu recherche`)
-  if(!isNaN(args[0])) {
+  if(args[0] && !isNaN(args[0])) {
     var search1 = await message.content.replace(args[0], ``)
     var search2 = await search1.replace(search1.substr(0,message.content.indexOf(' ')), ``)
     var search = await search2.replace(`  `, ``)
     var result = args[0]
   } else {
     var search = args.join(` `)
-    var result = 0
+    var result = 35
   }
+  if((args[0] || args[1]) == ('sc' ||'soundcloud')){
+    await SC.search(search).then(async Songs => {
+      var songs = Songs.slice( 0, result )
+      if(!songs[0]) return message.channel.send(`Rien trouvé`)
+      await songs.forEach(async (Song,index) => {
+        await SC.getSongInfo(Song.url).then(async song => {
+  const Search2 = new Discord.MessageEmbed()
+  .setColor(Bot_Color)
+  .setImage(song.thumbnail)
+  .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${search}`)
+  await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
+  await message.channel.send({ embeds: [Search2]})
+        })
+      })
+})
+  }
+  else {
   var Video = await ytSearch({ search: search })
   var videos = Video.videos.slice( 0, result )
   videos.forEach(async (video, index) => {
@@ -1444,6 +1559,7 @@ if(message.content.startsWith(Prefix + `search`)){
   await Search.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
   await message.channel.send({ embeds: [Search]})
 })
+  }
 }
 
 if(message.content == Prefix + `voice`){
@@ -1461,4 +1577,3 @@ if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex
 });
 
 Client.login(process.env.Token)
-
