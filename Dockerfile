@@ -4,4 +4,4 @@ COPY package.json ./
 RUN npm install nodemon -g
 COPY . .
 EXPOSE 8080
-CMD [ "qovery", "run" ]
+CMD [ "npm", "start" ]
