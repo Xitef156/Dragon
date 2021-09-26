@@ -52,7 +52,7 @@ makeCache: Discord.Options.cacheWithLimits({
 }), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
 });
 const queue = new Map();
-const player = Voice.createAudioPlayer();player.setMaxListeners(3)
+const player = Voice.createAudioPlayer();
 
 const Bot_Color = `#42ff00`
 const CreatorTag = `Xitef156#1822`
@@ -119,6 +119,7 @@ async function play(guild){
 }
 Audio(Song)
   async function Play(stream){
+await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
 player.play(Stream)
 player.on(Voice.AudioPlayerStatus.Idle, async () => {
