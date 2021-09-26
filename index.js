@@ -107,11 +107,13 @@ async function play(guild){
     return;
   }
   async function Audio(song){
-  if(song.type = 'sc') SC.getSongInfo(song.url).then(async Song => {
+  if(song.type == 'sc') {
+    SC.getSongInfo(song.url).then(async Song => {
     await Song.downloadProgressive().then(stream => Play(stream))
-  }) 
+  })
+}
   else {
-    var Stream = await ytdl(`https://youtu.be/${song.id}`, { volume: db.get(`guild_${guild}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
+    var Stream = await ytdl(song.url, { volume: db.get(`guild_${guild}_Volume`) || 1, filter : 'audioonly', highWaterMark: 1 << 25 })
     Play(Stream);
   }
 }
