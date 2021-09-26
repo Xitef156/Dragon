@@ -418,7 +418,7 @@ Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the
   if(newState.member.id == `688327045129699400`) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.member.id == CreatorID) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.channel === null) var event = `déconnecté à ${oldState.channel} (**${oldState.channel.name}**)`                                                      // Disconnect
-  else if(oldState.channel === null) var event = `connecté à ${oldState.channel} (**${oldState.channel.name}**)`                                                   // Connect
+  else if(oldState.channel === null) var event = `connecté à ${newState.channel} (**${newState.channel.name}**)`                                                   // Connect
   else if (oldState.selfDeaf === false && newState.selfDeaf === true) var event = `s'est mit en sourdine dans ${newState.channel} (**${newState.channel.name}**)`  // Sourdine
   else if (oldState.selfDeaf === true && newState.selfDeaf === false) var event = `n'est plus en sourdine dans ${newState.channel} (**${newState.channel.name}**)` // Dé-sourdine
   else if (oldState.selfMute === false && newState.selfMute === true) var event = `s'est mute dans ${newState.channel} (**${newState.channel.name}**)`             // Mute
