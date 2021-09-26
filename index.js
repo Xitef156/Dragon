@@ -16,7 +16,7 @@ const express = require('express');
 
 // Constants
 const PORT = 8080;
-const HOST = '0.0.0.0';
+const HOST = 'xitef156.tk';
 
 // App
 const app = express();
