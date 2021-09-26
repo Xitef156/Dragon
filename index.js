@@ -1400,11 +1400,11 @@ if(message.content.startsWith(Prefix + `list`)){
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
-  await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
 
   if(args.includes(`soundcloud`) || args.includes(`sc`)){
+  await message.channel.send(`Recherche de **${args.join(` `).replace('soundcloud', '')}**`).then((msg => msg.suppressEmbeds(true)))
 
-    SC.search(args.join(` `).replace('soundcloud', ''), 'track').then(async Song => {
+    SC.search(args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' '), 'track').then(async Song => {
 
       SC.getSongInfo(Song[0].url).then(async song => {
 
@@ -1443,6 +1443,7 @@ if(message.content.startsWith(Prefix + `list`)){
     })
   })
   } else {
+  await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
             const video = await videoFinder(args.join(' '));
 
             if(video){
