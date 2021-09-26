@@ -1405,7 +1405,7 @@ if(message.content.startsWith(Prefix + `list`)){
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
 
   if(args.includes(`soundcloud`) || args.includes(`sc`)){
-  await message.channel.send(`Recherche de **${args.join(` `).replace('soundcloud', '')}**`).then((msg => msg.suppressEmbeds(true)))
+  await message.channel.send(`Recherche de **${args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' ')}**`).then((msg => msg.suppressEmbeds(true)))
 
     SC.search(args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' '), 'track').then(async Song => {
 
