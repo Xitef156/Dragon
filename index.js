@@ -929,6 +929,7 @@ if(message.content.startsWith(Prefix + `set`)){
   }
 
   if(message.content.startsWith(Prefix + `download`)){
+	  if(!Token) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
     if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
     (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
     if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
