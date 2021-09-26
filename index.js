@@ -1592,4 +1592,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(process.env.Token)
+Client.login(process.env.Token);
