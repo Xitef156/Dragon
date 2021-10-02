@@ -67,6 +67,7 @@ const Ch_Cmd = '777937994245996545'
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
+const internal = require('stream');
 registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
 const Font_Size_max = 80
@@ -74,31 +75,31 @@ const Font_Size_min = 50
 const Canvas_Larg = 700
 const Canvas_Haut = 250
 
-function makeid(length) {
+function makeid(length = String) {
   var result           = '';
   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var charactersLength = characters.length;
   for ( var i = 0; i < length; i++ ) result += characters.charAt(Math.floor(Math.random() * charactersLength));
  return result;
 }
-async function getFilesizeInBytes(filename) { 
+async function getFilesizeInBytes(filename = String) { 
   var File = await fs.statSync(filename)
   return File.size;
 }
 
-function remSpCh(sentence) {
+function remSpCh(sentence = String) {
   var res = sentence;
   var result = res.replace(/[&\/\\#,+()$~%.'":*?<>{}|]/gi, '');
   return result;
 }
 
-function sleep(s) {
+function sleep(s = Int32Array) {
   return new Promise((resolve) => {
     setTimeout(resolve, (s * 1000));
   });
 }
 
-async function play(guild){
+async function play(guild, channel, x = Int32Array){
   var Songs = queue.get(guild)
   var Song = Songs[0];
   if (!Song) {
@@ -123,7 +124,9 @@ await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
 player.play(Stream)
 player.on(Voice.AudioPlayerStatus.Idle, async () => {
-  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
+	channel.send(`${player.listenerCount}`);
+	channel.send(`${x + 1}`);
+  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild, channel, x);
   else {
     await Songs.shift();
   if (!Song) {
@@ -131,13 +134,13 @@ player.on(Voice.AudioPlayerStatus.Idle, async () => {
     queue.delete(guild.id);
     return;
   }
-  play(guild);
+  play(guild, channel, x);
   }
 })
   }
 }
 
-function youtube_parser(url){
+function youtube_parser(url = String){
   var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
   var match = url.match(regExp);
   return (match&&match[7].length==11)? match[7] : url;
@@ -204,7 +207,7 @@ async function guild_create(guild) {
     })
   })
 }
-async function canvas_card(member, type, color, color1, color2){
+async function canvas_card(member, type = String, color = String, color1 = String, color2 = String){
   var Font_Size_1 = Font_Size_max
   var Font_Size_2 = Font_Size_min
   if(type == `Left`) var x = ` 2`
@@ -1437,7 +1440,7 @@ if(message.content.startsWith(Prefix + `list`)){
         queue.set(message.guild.id, Songs);
         Songs.push(SONG);
         New.setColor('#ff5d00')
-        play(message.guild.id)
+        play(message.guild.id, message.channel, 0)
       } else {
         Songs.push(SONG);
         New.setColor('FUCHSIA')
@@ -1468,7 +1471,7 @@ if(message.content.startsWith(Prefix + `list`)){
                 var Songs = [];
                 queue.set(message.guild.id, Songs);
                 Songs.push(song);
-                play(message.guild.id);
+                play(message.guild.id, message.channel, 0);
                 New.setColor('RED')
               } else {
                 Songs.push(song);
