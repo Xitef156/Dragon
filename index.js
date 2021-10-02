@@ -148,17 +148,19 @@ function youtube_parser(url = String){
 }
 
 const songFinder = async (search) => {
+    return new Promise((resolve) => {
     var ARGS = search.replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
     if(search.includes(`soundcloud.com`)){
         if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
         else var Args = ARGS.replace(' ', '')
-        SC.getSongInfo(Args).then(song => { return song })
+        SC.getSongInfo(Args).then(song => resolve(song))
     }
     else {
         SC.search(ARGS).then(Song => {
-          SC.getSongInfo(Song[0].url).then(song => { return song })
+          SC.getSongInfo(Song[0].url).then(song => resolve(song))
         })
       }
+    })
 }
 
 const videoFinder = async (search) => {
@@ -1419,9 +1421,7 @@ if(message.content.startsWith(Prefix + `list`)){
           }
 
   if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
-      await songFinder(args.join(` `), function (err, song) {
-          if(err) console.log(err);
-          else {
+      const song = await songFinder(args.join(` `))
             const New = new Discord.MessageEmbed()
             var SONG = {
               type: 'sc',
@@ -1447,8 +1447,6 @@ if(message.content.startsWith(Prefix + `list`)){
             }
               New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
               message.channel.send({ embeds : [New]})
-          }
-      })
   } else {
   await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
             const video = await videoFinder(args.join(' '));
