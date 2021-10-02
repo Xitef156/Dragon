@@ -67,7 +67,6 @@ const Ch_Cmd = '777937994245996545'
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
-const internal = require('stream');
 registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
 const Font_Size_max = 80
@@ -150,10 +149,9 @@ function youtube_parser(url = String){
 
 const songFinder = async (search) => {
     var ARGS = search.replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
-    if(message.content.includes(`soundcloud.com`)){
+    if(search.includes(`soundcloud.com`)){
         if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
         else var Args = ARGS.replace(' ', '')
-        console.log(Args)
         SC.getSongInfo(Args).then(song => { return song })
     }
     else {
@@ -1421,7 +1419,6 @@ if(message.content.startsWith(Prefix + `list`)){
           }
 
   if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
-      message.channel.send(`SoundCLoud`);
       await songFinder(args.join(` `)).then(async song => {
 
       const New = new Discord.MessageEmbed()
