@@ -965,7 +965,7 @@ if(message.content.startsWith(Prefix + `set`)){
     var Code = makeid(10)
     var Title = remSpCh(`${message.author.tag} - ${Code}`)
     if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
-        songFinder(args.join(` `)).then(song => {
+        songFinder(args.join(` `)).then(async song => {
             message.channelS.send(song.title);
             message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
             if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
