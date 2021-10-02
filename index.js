@@ -1419,34 +1419,36 @@ if(message.content.startsWith(Prefix + `list`)){
           }
 
   if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
-      await songFinder(args.join(` `)).then(async song => {
-
-      const New = new Discord.MessageEmbed()
-      var SONG = {
-        type: 'sc',
-        title: song.title,
-        url: song.url,
-        author: {
-          name: song.author.name,
-          url: song.author.url
-        },
-        url: song.url,
-        duration: song.duration,
-      };
-      var Songs = queue.get(message.guild.id);
-      if (!Songs) {
-        var Songs = [];
-        queue.set(message.guild.id, Songs);
-        Songs.push(SONG);
-        New.setColor('#ff5d00')
-        play(message.guild.id, message.channel, 0)
-      } else {
-        Songs.push(SONG);
-        New.setColor('FUCHSIA')
-      }
-        New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
-        message.channel.send({ embeds : [New]})
-    })
+      await songFinder(args.join(` `), function (err, song) {
+          if(err) console.log(err);
+          else {
+            const New = new Discord.MessageEmbed()
+            var SONG = {
+              type: 'sc',
+              title: song.title,
+              url: song.url,
+              author: {
+                name: song.author.name,
+                url: song.author.url
+              },
+              url: song.url,
+              duration: song.duration,
+            };
+            var Songs = queue.get(message.guild.id);
+            if (!Songs) {
+              var Songs = [];
+              queue.set(message.guild.id, Songs);
+              Songs.push(SONG);
+              New.setColor('#ff5d00')
+              play(message.guild.id, message.channel, 0)
+            } else {
+              Songs.push(SONG);
+              New.setColor('FUCHSIA')
+            }
+              New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
+              message.channel.send({ embeds : [New]})
+          }
+      })
   } else {
   await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
             const video = await videoFinder(args.join(' '));
