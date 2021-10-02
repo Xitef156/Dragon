@@ -124,10 +124,11 @@ await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
 player.play(Stream)
 player.on(Voice.AudioPlayerStatus.Idle, async () => {
+    var y = x + 1
 	channel.send(`${player.listenerCount('subscribe')}`);
 	channel.send(`${player.getMaxListeners()}`);
-	channel.send(`${x + 1}`);
-  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild, channel, x);
+	channel.send(`${y}`);
+  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild, channel, y);
   else {
     await Songs.shift();
   if (!Song) {
@@ -135,7 +136,7 @@ player.on(Voice.AudioPlayerStatus.Idle, async () => {
     queue.delete(guild.id);
     return;
   }
-  play(guild, channel, x);
+  play(guild, channel, y);
   }
 })
   }
