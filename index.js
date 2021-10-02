@@ -148,6 +148,21 @@ function youtube_parser(url = String){
   return (match&&match[7].length==11)? match[7] : url;
 }
 
+const songFinder = async (search) => {
+    var ARGS = search.replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
+    if(message.content.includes(`soundcloud.com`)){
+        if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
+        else var Args = ARGS.replace(' ', '')
+        console.log(Args)
+        SC.getSongInfo(Args).then(song => { return song })
+    }
+    else {
+        SC.search(ARGS).then(Song => {
+          SC.getSongInfo(Song[0].url).then(song => { return song })
+        })
+      }
+}
+
 const videoFinder = async (search) => {
   var search = await youtube_parser(search)
   if(search.length === 11) var videoResult1 = await ytSearch({ videoId: search })
@@ -950,20 +965,8 @@ if(message.content.startsWith(Prefix + `set`)){
     var Code = makeid(10)
     var Title = remSpCh(`${message.author.tag} - ${Code}`)
     if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
-      var ARGS = args.join(` `).replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
-      if(message.content.includes(`soundcloud.com`)) var type = true
-      else var type = false
-        if(type == true){
-          if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
-          else var Args = ARGS.replace(' ', '')
-          console.log(Args)
-          SC.getSongInfo(Args).then(song => download(song))
-        } else {
-          SC.search(ARGS).then(Song => {
-            SC.getSongInfo(Song[0].url).then(song => download(song))
-          })
-        }
-        async function download(song){
+        songFinder(args.join(` `)).then(song => {
+            message.channelS.send(song.title);
             message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
             if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
             var File = `./Download${Location}MP3/${Title}.mp3`
@@ -986,7 +989,7 @@ if(message.content.startsWith(Prefix + `set`)){
         db.set(`Format`, 3)
         ChangeFile()
               })
-            }
+            })
 } else {
       var format = `4`
     if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
@@ -1417,12 +1420,9 @@ if(message.content.startsWith(Prefix + `list`)){
             }).subscribe(player)
           }
 
-  if(args.includes(`soundcloud`) || args.includes(`sc`)){
-  await message.channel.send(`Recherche de **${args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' ')}**`).then((msg => msg.suppressEmbeds(true)))
-
-    SC.search(args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' '), 'track').then(async Song => {
-
-      SC.getSongInfo(Song[0].url).then(async song => {
+  if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
+      message.channel.send(`SoundCLoud`);
+      await songFinder(args.join(` `)).then(async song => {
 
       const New = new Discord.MessageEmbed()
       var SONG = {
@@ -1450,7 +1450,6 @@ if(message.content.startsWith(Prefix + `list`)){
         New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
         message.channel.send({ embeds : [New]})
     })
-  })
   } else {
   await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
             const video = await videoFinder(args.join(' '));
