@@ -1404,6 +1404,13 @@ if(message.content.startsWith(Prefix + `list`)){
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
+              if (!Client.voice.adapters.get(message.guild.id)) {
+              Voice.joinVoiceChannel({
+                channelId: message.member.voice.channel.id,
+                guildId: message.guild.id,
+                adapterCreator: message.guild.voiceAdapterCreator
+            }).subscribe(player)
+          }
 
   if(args.includes(`soundcloud`) || args.includes(`sc`)){
   await message.channel.send(`Recherche de **${args.join(` `).replace('soundcloud', '').replace('sc', '').replace('  ', ' ').replace('  ', ' ')}**`).then((msg => msg.suppressEmbeds(true)))
@@ -1413,13 +1420,6 @@ if(message.content.startsWith(Prefix + `list`)){
       SC.getSongInfo(Song[0].url).then(async song => {
 
       const New = new Discord.MessageEmbed()
-      if (!Client.voice.adapters.get(message.guild.id)) {
-      Voice.joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator
-    }).subscribe(player)
-  }
       var SONG = {
         type: 'sc',
         title: song.title,
@@ -1468,19 +1468,12 @@ if(message.content.startsWith(Prefix + `list`)){
                 var Songs = [];
                 queue.set(message.guild.id, Songs);
                 Songs.push(song);
-                play(message.guild.id)
+                play(message.guild.id);
+                New.setColor('RED')
               } else {
                 Songs.push(song);
                 New.setColor(`#0xd677ff`)
               }
-              if (!Client.voice.adapters.get(message.guild.id)) {
-                New.setColor('RED')
-              Voice.joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guild.id,
-                adapterCreator: message.guild.voiceAdapterCreator
-            }).subscribe(player)
-          }
             New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
             message.channel.send({ embeds : [New]})
           } else {
