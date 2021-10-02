@@ -81,6 +81,7 @@ function makeid(length = String) {
   for ( var i = 0; i < length; i++ ) result += characters.charAt(Math.floor(Math.random() * charactersLength));
  return result;
 }
+
 async function getFilesizeInBytes(filename = String) { 
   var File = await fs.statSync(filename)
   return File.size;
@@ -148,16 +149,28 @@ function youtube_parser(url = String){
 }
 
 const songFinder = async (search) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
     var ARGS = search.replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
     if(search.includes(`soundcloud.com`)){
-        if(ARGS.includes(`?in=`) || ARGS.split(`/`).length - 1 > 5) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
+        if(ARGS.includes(`?in=`)) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
         else var Args = ARGS.replace(' ', '')
-        SC.getSongInfo(Args).then(song => resolve(song))
+        SC.getSongInfo(Args, (err, data) => {
+          if(err) {
+            reject(err)
+            return;
+          }
+          resolve(data);
+        })
     }
     else {
         SC.search(ARGS).then(Song => {
-          SC.getSongInfo(Song[0].url).then(song => resolve(song))
+          SC.getSongInfo(Song[0].url, (err, data) => {
+            if(err) {
+              reject(err)
+              return;
+            }
+            resolve(data);
+          })
         })
       }
     })
@@ -1402,11 +1415,7 @@ if(message.content.startsWith(Prefix + `list`)){
   }
 }
 
-    if(message.content.startsWith(Prefix)){
-      var args2 = message.content.substring(Prefix.length).split(" ");
-    const voiceChannel = message.member.voice.channel
-    switch (args2[0].toLowerCase()) {
-      case "play":
+if(message.content.startsWith(Prefix + `play`)){
   if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
   const permissions = message.member.voice.channel.permissionsFor(message.member.user);
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
@@ -1421,7 +1430,8 @@ if(message.content.startsWith(Prefix + `list`)){
           }
 
   if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
-      const song = await songFinder(args.join(` `))
+    await message.channel.send(`Recherche de **${args.join(' ')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
+      const song = await songFinder(args.join(' '))
             const New = new Discord.MessageEmbed()
             var SONG = {
               type: 'sc',
@@ -1447,8 +1457,8 @@ if(message.content.startsWith(Prefix + `list`)){
             }
               New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
               message.channel.send({ embeds : [New]})
-  } else {
-  await message.channel.send(`Recherche de **${args.join(' ')}**`).then((msg => msg.suppressEmbeds(true)))
+            } else {
+            await message.channel.send(`Recherche de **${args.join(' ')}** sur Youtube`).then((msg => msg.suppressEmbeds(true)))
             const video = await videoFinder(args.join(' '));
 
             if(video){
@@ -1483,35 +1493,37 @@ if(message.content.startsWith(Prefix + `list`)){
                    return;
                  }
                 }
-                 break;
-                 case "leave":
-  if(!voiceChannel) return message.channel.send(`Tu dois être dans un vocal`);
+              }
+
+if(message.content == Prefix + `leave`){
+  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
   queue.delete(message.guild.id);
   Voice.getVoiceConnection(message.guild.id).disconnect();
   message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
-  break;
-                 case "skip":
-                  var Songs = queue.get(message.guild.id);
-        if(!Songs) {
-          await Voice.getVoiceConnection(message.guild.id).disconnect();
-          return message.channel.send(`Il y a rien a skip`)
-        } else {
-          await player.stop()
-          play(message.guild.id)
-        }
+              }
+
+if(message.content == Prefix + `skip`){
+  var Songs = queue.get(message.guild.id);
+  if(!Songs) {
+    await Voice.getVoiceConnection(message.guild.id).disconnect();
+    return message.channel.send(`Il y a rien a skip`)
+  } else {
+    await player.stop()
+    play(message.guild.id)
+  }
   message.channel.send(`Skipped !`)
-  break;
-                 case "queue":
-                  var Songs = queue.get(message.guild.id);
-        if(!Songs) return message.channel.send(`Il y a rien a voir`)
-              const Queue = new Discord.MessageEmbed()
-              .setColor(`#00ffff`)
-              .setTitle(`Queue de ${message.guild.name}`)
-              await Songs.forEach((song, index) => Queue.addField(`${index}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
-              await message.channel.send({ embeds: [Queue]})
-  break;
-                }
-    }
+}
+
+if(message.content == Prefix + `queue`){
+  var Songs = queue.get(message.guild.id);
+if(!Songs) return message.channel.send(`Il y a rien a voir`)
+const Queue = new Discord.MessageEmbed()
+.setColor(`#00ffff`)
+.setTitle(`Queue de ${message.guild.name}`)
+await Songs.forEach((song, index) => Queue.addField(`${index}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
+await message.channel.send({ embeds: [Queue]})
+}
+
 if(message.content === Prefix + `loop`){
   if(db.get(`guild_${message.guild.id}_Music_Looping`) === true){
     db.set(`guild_${message.guild.id}_Music_Looping`, false)
