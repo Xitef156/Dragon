@@ -124,7 +124,8 @@ await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
 player.play(Stream)
 player.on(Voice.AudioPlayerStatus.Idle, async () => {
-	channel.send(`${player.listenerCount}`);
+	channel.send(`${player.listenerCount('subscribe')}`);
+	channel.send(`${player.getMaxListeners()}`);
 	channel.send(`${x + 1}`);
   if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild, channel, x);
   else {
