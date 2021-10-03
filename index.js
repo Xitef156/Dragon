@@ -123,7 +123,8 @@ Audio(Song)
 await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
 await player.play(Stream)
-  }
+	  await Play2(guild);
+async function Play2(guild){
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
     if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
     else {
@@ -135,7 +136,9 @@ await player.play(Stream)
     }
     play(guild);
     }
-  })
+  })	
+}
+  }
 }
 
 function youtube_parser(url = String){
