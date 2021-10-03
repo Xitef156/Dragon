@@ -99,7 +99,7 @@ function sleep(s = Int32Array) {
   });
 }
 
-async function play(guild, channel, x = Int32Array){
+async function play(guild){
   var Songs = queue.get(guild)
   var Song = Songs[0];
   if (!Song) {
@@ -122,24 +122,20 @@ Audio(Song)
   async function Play(stream){
 await player.setMaxListeners(11)
   var Stream = await Voice.createAudioResource(stream)
-player.play(Stream)
-player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    var y = x + 1
-	channel.send(`${player.listenerCount('subscribe')}`);
-	channel.send(`${player.getMaxListeners()}`);
-	channel.send(`${y}`);
-  if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild, channel, y);
-  else {
-    await Songs.shift();
-  if (!Song) {
-    Voice.getVoiceConnection(guild).disconnect();
-    queue.delete(guild.id);
-    return;
+await player.play(Stream)
   }
-  play(guild, channel, y);
-  }
-})
-  }
+  player.on(Voice.AudioPlayerStatus.Idle, async () => {
+    if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
+    else {
+      await Songs.shift();
+    if (!Song[0]) {
+      Voice.getVoiceConnection(guild).disconnect();
+      queue.delete(guild.id);
+      return;
+    }
+    play(guild);
+    }
+  })
 }
 
 function youtube_parser(url = String){
@@ -1429,10 +1425,11 @@ if(message.content.startsWith(Prefix + `play`)){
             }).subscribe(player)
           }
 
-  if(args[0].includes(`soundcloud`) || args[0].includes(`sc`)){
+  if(args[0] == `soundcloud` || args[0] == `sc`){
     await message.channel.send(`Recherche de **${args.join(' ')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
       const song = await songFinder(args.join(' '))
             const New = new Discord.MessageEmbed()
+            if(!song) return message.channel.send(`Rien trouvée`)
             var SONG = {
               type: 'sc',
               title: song.title,
