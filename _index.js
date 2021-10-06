@@ -315,6 +315,11 @@ async function canvas_card(member, type = String, color = String, color1 = Strin
 }
 
 async function Msg(message) {
+  var msg1 = message.content.replace("<@!688327045129699400>", "@-Charlotte")
+  var Msg1 = msg1.replace("<@!776140752752869398>", "@-Xitef156")
+  var msg2 = Msg1.replace("<@688327045129699400>", "@-Charlotte")
+  var Msg2 = msg2.replace("<@776140752752869398>", "@-Xitef156")
+    var Message = Msg2.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   if (message.attachments.size > 0) {
     var Attachment_1 = message.attachments
     var Attachment_2 = `comme fichier : [ ${Attachment_1.map(att => `${att.name} : ${att.size / 1000}Ko ${att.url}`).join(` ; `)} ]`
@@ -342,8 +347,7 @@ if (message.embeds.length > 0) {
 })
   var Embeds_3 = `comme embeds : [ ${map.embeds.join(`\n ------------------------------------------------ \n`)} ]`
 } else var Embeds_3 = ``
-if(message.content !== ``)var Message = message.content
-else var Message = ``
+if(message.content === ``) var Message = ``
 if(Message && Embeds_3) var and1 = ` et `
 if(Message && Attachment_2) var and1 = ` et `
 if(Embeds_3 && Attachment_2) var and2 = ` et `
@@ -354,17 +358,16 @@ return Txt;
 async function Message(message){
   const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
 
-  if(message.author.id == CreatorID) var User = CreatorTag
-  else var User = `${message.author.toString()} (**${message.author.tag}**)`
+  if(message.author.id == CreatorID) {
+    var User = message.author.tag
+  }
+  else {
+    var User = `${message.author.toString()} (**${message.author.tag}**)`
+  }
     const Ch_Msg_1 = db.get(`guild_${message.guild.id}_Message-1`)
     if(message.content === `!xptdr`) return;
     if(message.author.id === Client.user.id && message.content.startsWith(`**`)) return;
     const Time = moment(message.createdAt).format('H:mm:ss')
-  var msg1 = message.content.replace("<@!688327045129699400>", "@-Charlotte")
-  var Msg1 = msg1.replace("<@!776140752752869398>", "@-Xitef156")
-  var msg2 = Msg1.replace("<@688327045129699400>", "@-Charlotte")
-  var Msg2 = msg2.replace("<@776140752752869398>", "@-Xitef156")
-    var Message = Msg2.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
     if(message.channel.id === Ch_Err) return;
     if(message.channel.id === 840923591460651008) return;
     if(message.channel.id === Ch_Cmd) return;
