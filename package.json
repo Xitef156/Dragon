@@ -23,9 +23,9 @@
     "har-validator": "5.0.0",
     "uuid": "8.3.2"
 },
-"main": "_index.js",
+"main": "index.js",
 "scripts": {
-    "start": "node _index.js"
+    "start": "node index.js"
 },
 "engines": {
     "node": "16.x.x"
