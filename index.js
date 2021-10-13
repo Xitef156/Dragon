@@ -1252,10 +1252,9 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
 
     if(message.content.startsWith(Prefix + `role`)){
           const mention = message.mentions.members.first();
-      if(!args[0]) return message.channel.send (`add ; remove ; delete ; create`);
-        if(args[0] == `add`){
+      if(!args[0]) return message.channel.send (`add ; remove ; delete ; create ; embed`);
+        if(args[0] === `add`){
           if(mention == undefined) return message.reply(`Membre non ou mal mentionné`);
-          } else {
             if(message.guild.roles.cache.find(role => role.name == `${args[2]}`)){
               let a_role = message.guild.roles.cache.find(role => role.name === `${args[2]}`);
               mention.roles.add(a_role.id)
@@ -1263,7 +1262,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
             } 
             else message.reply(args[0] + ` as déjà ce rôle`)
           }
-        if(args[0] == `remove`){
+          if(args[0] === `remove`){
           const mention = message.mentions.members.first();
           if(mention == undefined) return message.reply(`Membre non ou mal mentionné`);
           else {
@@ -1275,7 +1274,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
           else message.reply(`Tu n'as pas ce rôle`)
         }
       }
-      if(args[0] == `delete`){
+      if(args[0] === `delete`){
           const role_d = message.guild.roles.cache.find(role => role.name === args[2])
         if(message.guild.roles.cache.find(role => role.name == args[2])){
           if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
@@ -1283,6 +1282,48 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
           message.channel.send(`${args[1]} n'existe plus`)
         }
       } else message.reply(`${role_d} n\'existe pas`)
+      }
+      if(args[0] === `embed`){
+        var str = args.join(` `).replace(`embed`, ``)
+        const Args0 = str.substring(str.indexOf(`'`) + 1, str.lastIndexOf(`'`)).split(`;`)
+        const Args1 = str.substring(str.indexOf(`{`) + 1, str.lastIndexOf(`}`)).split(`;`)
+        const Args2 = str.substring(str.indexOf(`[`) + 1, str.lastIndexOf(`]`)).replace(` `, ``).split(`;`)
+        const Args3 = str.substring(str.indexOf(`(`) + 1, str.lastIndexOf(`)`)).split(`;`)
+        if(Args1.length !== Args2.length) return message.channel.send(`Il n'y a pas le même nombre de rôle que d'émojis`)
+        if(Args2.length !== Args3.length) return message.channel.send(`Il n'y a pas le même nombre d'émojis que de description`)
+        if(Args1.length !== Args3.length) return message.channel.send(`Il n'y a pas le même nombre de rôle que de description`)
+        Args1.forEach(role => { if(isNaN(role)) return message.channel.send(`Il y a des rôles qui ne sont pas des id`) })
+        Args2.forEach(emo => { if(emo.startsWith(`:`)) return message.channel.send(`Il y a des émojis qui commence pas par :`) })
+        const Embed = new Discord.MessageEmbed()
+        .setColor(Bot_Color)
+        .setTimestamp()
+        Args0.forEach(title => { if(title.startsWith(`Title`)) Embed.setTitle(title.replace(`Title:`, ``)) })
+        Args0.forEach(desc => { if(desc.startsWith(`Desc`)) Embed.setDescription(desc.replace(`Desc:`, ``)) })
+        Args0.forEach(thumb => { if(thumb.startsWith(`Thumb`) && thumb.includes(`https`))Embed.setThumbnail(thumb.replace(`Thumb:`, ``) || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`) })
+        await Args1.forEach(async (Role,index) => {
+          var desc = Args3[index]
+          var emo = Args2[index]
+          var role = await message.guild.roles.cache.find(ID => ID.id == Role)
+          Embed.addField(`${emo} ${role.name}`, desc)
+        })
+        Reaction()
+        async function Reaction() {
+          message.channel.send({embeds: [Embed]}).then(async msg => {
+            Args2.forEach(async (emo) => {
+            msg.react(emo)
+          const filter = (reaction, user) => {
+              return reaction.emoji.name === emo && user.id === message.author.id;
+          };
+          const collector = msg.createReactionCollector(filter, {time: 30000});
+          collector.on('collect', (reaction, user) => {
+            if(user.id !== Client.user.id) {
+              var index = Args2.indexOf(reaction.emoji.name)
+              message.guild.members.fetch(user.id).then(User => User.roles.add(Args1[index]))
+            }
+          });
+        })
+    })
+        }
       }
 
       if(args[0] == `create`){
