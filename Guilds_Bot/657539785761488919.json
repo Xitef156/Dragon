@@ -1,0 +1,27 @@
+{
+  "Name": "Flygon's Server",
+  "MemberCount": "20",
+  "ID": "657539785761488919",
+  "Logo": "https://cdn.discordapp.com/icons/657539785761488919/136809815611a7b7b3dc248d708500fd.webp?size=4096",
+  "Owner": "Tag : Flygon16#4343 ; ID : 414409674792763403",
+  "Prefix": null,
+  "Category": "897906730418184222",
+  "Channels": {
+    "Message1": "897906732616003654",
+    "Message2": "897906734390214677",
+    "Voice": "897906736990662706",
+    "Logs": "897906738928447509",
+    "Role": "897906741893799937",
+    "Channel": "897906744590757980",
+    "Nickname": "897906747082154064",
+    "Clear": "897906749909127168",
+    "Infos": "897906757907656714",
+    "MemberCount": "897906760873033808"
+  },
+  "Custom": {
+    "Welcome_Ch": null,
+    "Welcome": null,
+    "Left_Ch": null,
+    "Left": null
+  }
+}
