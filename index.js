@@ -52,6 +52,7 @@ makeCache: Discord.Options.cacheWithLimits({
 }), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
 });
 const queue = new Map();
+const React = new Map();
 const player = Voice.createAudioPlayer();
 
 const Bot_Color = `#42ff00`
@@ -471,6 +472,30 @@ Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the
   else if (oldState.channel !== newState.channel) var event = `à été move de ${oldState.channel} (**${oldState.channel.name}**) à ${newState.channel} (**${newState.channel.name}**)`                   // Move
   else var event = `est mute/demute dans ${oldState.channel} (**${oldState.channel.name}**) à ${newState.channel} (**${newState.channel.name}**) par un admin.`                                         // Admin
   Client.channels.cache.get(Ch_Voice).send(`**${moment().format('H:mm:ss')}** ${User} ${event}`);
+});
+
+Client.on('messageReactionAdd', async (Reaction,user) => {
+  const react = React.get(Reaction.message.guild.id)
+  if(!react) return;
+  
+  react.forEach(async Reacting => {
+    if(Reacting.message.id === Reaction.message.id){
+      var index = Reacting.emojis.indexOf(Reaction.emoji.name)
+      Reacting.message.guild.members.fetch(user.id).then(User => User.roles.add(Reacting.roles[index]))
+    }
+  })
+});
+
+Client.on('messageReactionRemove', async (Reaction,user) => {
+  const react = React.get(Reaction.message.guild.id)
+  if(!react) return;
+  
+  react.forEach(async Reacting => {
+    if(Reacting.message.id === Reaction.message.id){
+      var index = Reacting.emojis.indexOf(Reaction.emoji.name)
+      Reacting.message.guild.members.fetch(user.id).then(User => User.roles.remove(Reacting.roles[index]))
+    }
+  })
 });
 
 Client.on('threadCreate', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil créer : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
@@ -1309,19 +1334,17 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
         Reaction()
         async function Reaction() {
           message.channel.send({embeds: [Embed]}).then(async msg => {
-            Args2.forEach(async (emo) => {
-            msg.react(emo)
-          const filter = (reaction, user) => {
-              return reaction.emoji.name === emo && user.id === message.author.id;
-          };
-          const collector = msg.createReactionCollector(filter, {time: 30000});
-          collector.on('collect', (reaction, user) => {
-            if(user.id !== Client.user.id) {
-              var index = Args2.indexOf(reaction.emoji.name)
-              message.guild.members.fetch(user.id).then(User => User.roles.add(Args1[index]))
+            var List_react = React.get(message.guild.id)
+            var react = {
+              message: msg,
+              emojis: Args2,
+              roles: Args1
             }
-          });
-        })
+            if(!List_react){
+              var List = [];
+              React.set(message.guild.id, List)
+              List.push(react)
+            } else List.push(react)
     })
         }
       }
