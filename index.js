@@ -12,20 +12,19 @@ const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 var Download = require('image-downloader');
-const express = require('express');
-
+const express = require('express')
 // Constants
 const PORT = 8080;
-const HOST = '0.0.0.0';
+const HOST = '0.0.0.0'
 
 // App
 const app = express();
 app.get('/', (req, res) => {
-  res.send('Hello World');
+  res.send('Hello World')
 });
 
 app.listen(PORT, HOST);
-console.log(`Running on http://${HOST}:${PORT}`);
+console.log(`Running on http://${HOST}:${PORT}`)
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -150,27 +149,20 @@ function youtube_parser(url = String){
 
 const songFinder = async (search) => {
     return new Promise((resolve, reject) => {
-    var ARGS = search.replace('sc', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
+    var ARGS = search.replace('sc ', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
     if(search.includes(`soundcloud.com`)){
         if(ARGS.includes(`?in=`)) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
         else var Args = ARGS.replace(' ', '')
-        SC.getSongInfo(Args, (err, data) => {
+        SC.getSongInfo(Args).then((data,err) => {
           if(err) {
             reject(err)
             return;
-          }
-          resolve(data);
+          } else resolve(data)
         })
     }
     else {
         SC.search(ARGS).then(Song => {
-          SC.getSongInfo(Song[0].url, (err, data) => {
-            if(err) {
-              reject(err)
-              return;
-            }
-            resolve(data);
-          })
+          SC.getSongInfo(Song[0].url).then(song => resolve(song))
         })
       }
     })
@@ -961,8 +953,8 @@ if(message.content.startsWith(Prefix + `set`)){
     var Code = makeid(10)
     var Title = remSpCh(`${message.author.tag} - ${Code}`)
     if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
-        songFinder(args.join(` `)).then(async song => {
-            message.channelS.send(song.title);
+      var search = args.join(` `)
+        await songFinder(search).then(async song => {
             message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
             if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
             var File = `./Download${Location}MP3/${Title}.mp3`
@@ -973,6 +965,7 @@ if(message.content.startsWith(Prefix + `set`)){
         }
         Download.image(options)
               const stream = await song.downloadProgressive();
+              setTimeout(async () => {
               const writer = stream.pipe(fs.createWriteStream(File));
               writer.on("finish", () => {
         db.set(`Title1_${Code}`, song.title)
@@ -986,6 +979,7 @@ if(message.content.startsWith(Prefix + `set`)){
         ChangeFile()
               })
             })
+          }, 5000)
 } else {
       var format = `4`
     if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
@@ -1002,7 +996,7 @@ if(message.content.startsWith(Prefix + `set`)){
     if(message.author.id == CreatorID) var Title = remSpCh(video.title)
     const stream = ytdl(video.url, {
       filter: `${filter}only`,
-      quality: 'highest'
+      quality: 'lowest'
     })
     var File = `./Download${Location}MP${format}/${Title}.mp${format}`
     if(format == `3`){
@@ -1011,6 +1005,7 @@ if(message.content.startsWith(Prefix + `set`)){
     dest: `./Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
   }
   Download.image(options)
+  console.log(`Image Download`)
   db.set(`Title_${Code}`, video.title)
   db.set(`Author_${Code}`, video.author.name)
   db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
@@ -1022,6 +1017,7 @@ if(message.content.startsWith(Prefix + `set`)){
     message.channel.send(`Téléchargement de **${video.title}.mp${format}** de **${video.author.name}** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
     const download = stream.pipe(fs.createWriteStream(File))
     download.on('finish', async () => {
+      console.log(`Fichier téléchargé`)
       if(format == `4`) {
         ytdl(video.url, {
           filter: 'audioonly',
@@ -1080,6 +1076,7 @@ if(message.content.startsWith(Prefix + `set`)){
         }
         check2();
   })
+  .on('process', async process => console.log(Math.round(process.percent * 1) / 1))
       .run()
     }
     async function SendFile() {
@@ -1116,23 +1113,12 @@ if(message.content.startsWith(Prefix + `get_msg`)){
 }
 
   if(message.content === Prefix + `ptdr`){
-    const id = `VzTR0rduUYo`
+    const id = `ajOMDKvISDc`
     const Embed = new Discord.MessageEmbed()
     .setAuthor(`Nouvelle vidéo`)
     .setImage(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
-    .setTitle(`On avance ! Interdit de Casser #2`)
+    .setTitle(`Geometry Dash Meltdown 100%`)
     .setURL(`https://www.youtube.com/watch?v=${id}`)
-    .setDescription(`Bonjour, aujourd'hui c'est une survie Minecraft 1.17 où je n'ai pas le droit de casser de bloc.
-
-
-    Ceci est le second épisode, regarder la premier si vous ne l'avez pas vu et dite-moi si cette série de vidéos vous plaît.
-    
-    
-    Jeu : https://www.minecraft.net/fr-fr/get-minecraft
-    
-    Version : 1.17.1
-    Ressource pack : Sphax PureBDCraft : https://bdcraft.net/downloads/purebdcraft-minecraft/
-    Seed : 1173031306648354940`)
     .setTimestamp()
     .setColor('#42ff00')
     message.channel.send({content: `@everyone`, embeds: [Embed]})
@@ -1322,6 +1308,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
         const Embed = new Discord.MessageEmbed()
         .setColor(Bot_Color)
         .setTimestamp()
+        Args1.forEach(role => { if(!message.guild.roles.fetch(role)) return message.channel.send(`${role} est inconnu`) })
         Args0.forEach(title => { if(title.startsWith(`Title`)) Embed.setTitle(title.replace(`Title:`, ``)) })
         Args0.forEach(desc => { if(desc.startsWith(`Desc`)) Embed.setDescription(desc.replace(`Desc:`, ``)) })
         Args0.forEach(thumb => { if(thumb.startsWith(`Thumb`) && thumb.includes(`https`))Embed.setThumbnail(thumb.replace(`Thumb:`, ``) || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`) })
@@ -1334,6 +1321,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
         Reaction()
         async function Reaction() {
           message.channel.send({embeds: [Embed]}).then(async msg => {
+            Args2.forEach(emo => msg.react(emo));
             var List_react = React.get(message.guild.id)
             var react = {
               message: msg,
@@ -1344,7 +1332,7 @@ if(message.author.bot) return; // Les commandes en privé ne peuvent pa être re
               var List = [];
               React.set(message.guild.id, List)
               List.push(react)
-            } else List.push(react)
+            } else List_react.push(react)
     })
         }
       }
@@ -1443,6 +1431,7 @@ if(message.content.startsWith(Prefix + `play`)){
   if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
   if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
+  var Songs = queue.get(message.guild.id);
               if (!Client.voice.adapters.get(message.guild.id)) {
               Voice.joinVoiceChannel({
                 channelId: message.member.voice.channel.id,
@@ -1467,15 +1456,14 @@ if(message.content.startsWith(Prefix + `play`)){
               url: song.url,
               duration: song.duration,
             };
-            var Songs = queue.get(message.guild.id);
             if (!Songs) {
-              var Songs = [];
-              queue.set(message.guild.id, Songs);
-              Songs.push(SONG);
+              var Song = [];
+              queue.set(message.guild.id, Song);
+              Song.push(SONG);
               New.setColor('#ff5d00')
               play(message.guild.id, message.channel, 0)
             } else {
-              Songs.push(SONG);
+              queue.push(SONG);
               New.setColor('FUCHSIA')
             }
               New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
@@ -1527,14 +1515,16 @@ if(message.content == Prefix + `leave`){
 
 if(message.content == Prefix + `skip`){
   var Songs = queue.get(message.guild.id);
-  if(!Songs) {
+  if(!Songs[0]) {
     await Voice.getVoiceConnection(message.guild.id).disconnect();
     return message.channel.send(`Il y a rien a skip`)
   } else {
+    await Songs.shift()
     await player.stop()
-    play(message.guild.id)
-  }
+    await Voice.getVoiceConnection(message.guild.id).removeAllListeners()
+    await play(message.guild.id)
   message.channel.send(`Skipped !`)
+  }
 }
 
 if(message.content == Prefix + `queue`){
