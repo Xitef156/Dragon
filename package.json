@@ -26,8 +26,5 @@
     "main": "index.js",
     "scripts": {
         "start": "node index.js"
-    },
-"engines": {
-    "node": "14.x"
-}
+    }
 }
