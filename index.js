@@ -12,19 +12,7 @@ const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 var Download = require('image-downloader');
-const express = require('express')
-// Constants
-const PORT = 8080;
-const HOST = '0.0.0.0'
-
 // App
-const app = express();
-app.get('/', (req, res) => {
-  res.send('Hello World')
-});
-
-app.listen(PORT, HOST);
-console.log(`Running on http://${HOST}:${PORT}`)
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -64,7 +52,7 @@ const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
 const Ch_Cmd = '777937994245996545'
-
+const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.0P9GIG3G52UoEpe0oh3rZenqyCk`
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
@@ -940,7 +928,7 @@ if(message.content.startsWith(Prefix + `set`)){
   }
 
   if(message.content.startsWith(Prefix + `download`)){
-	  if(process.env.process.env.Token) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
+	  if(process.env.Token) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
     if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
     (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
     if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
@@ -1614,4 +1602,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(process.env.Token);
+Client.login(Token);
