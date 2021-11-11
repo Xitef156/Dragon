@@ -52,7 +52,7 @@ const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
 const Ch_Cmd = '777937994245996545'
-const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.0P9GIG3G52UoEpe0oh3rZenqyCk`
+const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.IOSFElPVclc_xhGbzBy9sQtE6fs`
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
