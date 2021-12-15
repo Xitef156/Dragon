@@ -20,7 +20,7 @@
     "yt-search": "^2.10.2",
     "ytdl-core": "^4.9.1",
     "ffmpeg-static": "^4.4.0",
-    "express.js": "^4.17.1"
+    "express": "^4.17.1"
   },
   "scripts": {
     "start": "node index.js"
