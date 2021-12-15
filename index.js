@@ -55,7 +55,7 @@ const Ch_Cmd = '777937994245996545'
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
-registerFont(`C:/Users/alexi/Desktop/Bot/${Font}.ttf`, {family: Font})
+registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
 const Font_Size_max = 80
 const Font_Size_min = 50
@@ -232,7 +232,7 @@ async function canvas_card(member, type = String, color = String, color1 = Strin
   
 	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
-	const background = await Canvas.loadImage(`C:/Users/alexi/Desktop/Bot/wallpaper${x}.png`);
+	const background = await Canvas.loadImage(`./wallpaper${x}.png`);
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
   var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
   grd.addColorStop(0, color);
@@ -369,11 +369,11 @@ async function Message(message){
 
 Client.on(`ready`, async () => {
   const upgraded = await ncu.run({
-      packageFile: 'C:/Users/alexi/Desktop/Bot/package.json',
+      packageFile: './package.json',
       upgrade: true,
     })
     console.log(upgraded);
-  var dir = 'C:/Users/alexi/Desktop/Bot/Guilds_Bot';
+  var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
@@ -382,8 +382,8 @@ setInterval(() => {
   Client.user.setActivity(`${date}`)
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
-      if(!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
-      var obj = JSON.parse(fs.readFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`));
+      if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
+      var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
       [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
         if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
         if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
@@ -430,7 +430,7 @@ setInterval(() => {
       }
       }
       let data = JSON.stringify(Guild, null, 2)
-      fs.writeFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`, data);
+      fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
   })
             });
 	process.on('uncaughtException', error => {
@@ -581,7 +581,7 @@ Client.on(`guildMemberAdd`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`]});
+  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`./Custom/Welcome/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Welcome`, `#00fbff`, `#53dad8`, `#0c00ff`)
 	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
@@ -623,7 +623,7 @@ Client.on(`guildMemberRemove`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`]});
+  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`./Custom/Left/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Left`, `#ff0000`, `#ff2e00`, `#ff5d00`)
 	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
@@ -931,10 +931,10 @@ if(message.content.startsWith(Prefix + `set`)){
 	  if(process.env.process.env.TOKEN) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
     if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
     (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
-    if (!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Download/MP3`)) fs.mkdirSync(`C:/Users/alexi/Desktop/Bot/Download/MP3`);
-    if (!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Download/MP4`)) fs.mkdirSync(`C:/Users/alexi/Desktop/Bot/Download/MP4`);
-    if (!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Download/Others/MP3`)) fs.mkdirSync(`C:/Users/alexi/Desktop/Bot/Download/Others/MP3`);
-    if (!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Download/Others/MP4`)) fs.mkdirSync(`C:/Users/alexi/Desktop/Bot/Download/Others/MP4`);
+    if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
+    if (!fs.existsSync(`./Download/MP4`)) fs.mkdirSync(`./Download/MP4`);
+    if (!fs.existsSync(`./Download/Others/MP3`)) fs.mkdirSync(`./Download/Others/MP3`);
+    if (!fs.existsSync(`./Download/Others/MP4`)) fs.mkdirSync(`./Download/Others/MP4`);
     message.channel.send(`Recherche en cours...`)
     console.log(`yes`)
     if(AuthifCreator) var Location = `/`
@@ -946,11 +946,11 @@ if(message.content.startsWith(Prefix + `set`)){
         await songFinder(search).then(async song => {
             message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
             if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
-            var File = `C:/Users/alexi/Desktop/Bot/Download${Location}MP3/${Title}.mp3`
+            var File = `./Download${Location}MP3/${Title}.mp3`
             const url = song.thumbnail
         const options = {
           url: url,
-          dest: `C:/Users/alexi/Desktop/Bot/Download/${song.id}.png`                // will be saved to /path/to/dest/image.jpg
+          dest: `./Download/${song.id}.png`                // will be saved to /path/to/dest/image.jpg
         }
         Download.image(options)
               const stream = await song.downloadProgressive();
@@ -960,10 +960,10 @@ if(message.content.startsWith(Prefix + `set`)){
         db.set(`Title1_${Code}`, song.title)
         db.set(`Author_${Code}`, song.author.name)
         db.set(`Format`, 3)
-        db.set(`Image_${Code}`, `C:/Users/alexi/Desktop/Bot/Download/${song.id}.png`)
+        db.set(`Image_${Code}`, `./Download/${song.id}.png`)
         db.set(`Title2_${Code}`, Title)
-        db.set(`Location`, `C:/Users/alexi/Desktop/Bot/Download${Location}work${Code}.mp3`)
-        db.set(`Code_Image_${Code}`, `C:/Users/alexi/Desktop/Bot/Download/${song.id}.png`)
+        db.set(`Location`, `./Download${Location}work${Code}.mp3`)
+        db.set(`Code_Image_${Code}`, `./Download/${song.id}.png`)
         db.set(`Format`, 3)
         ChangeFile()
               })
@@ -988,18 +988,18 @@ if(message.content.startsWith(Prefix + `set`)){
       filter: `${filter}only`,
       quality: 'highest'
     })
-    var File = `C:/Users/alexi/Desktop/Bot/Download${Location}MP${format}/${Title}.mp${format}`
+    var File = `./Download${Location}MP${format}/${Title}.mp${format}`
     if(format == `3`){
   const options = {
     url: video.image,
-    dest: `C:/Users/alexi/Desktop/Bot/Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
+    dest: `./Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
   }
   Download.image(options)
   console.log(`Image Download`)
   db.set(`Title_${Code}`, video.title)
   db.set(`Author_${Code}`, video.author.name)
-  db.set(`Image_${Code}`, `C:/Users/alexi/Desktop/Bot/Download/${video.videoId}.png`)
-  db.set(`Location`, `C:/Users/alexi/Desktop/Bot/Download${Location}work${Code}.mp${format}`)
+  db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
+  db.set(`Location`, `./Download${Location}work${Code}.mp${format}`)
 }
       db.set(`Title2_${Code}`, Title)
               db.set(`Title_${video.videoId}`, video.title)
@@ -1013,14 +1013,14 @@ if(message.content.startsWith(Prefix + `set`)){
           filter: 'audioonly',
           quality: 'highest'
         })
-        .pipe(fs.createWriteStream(`C:/Users/alexi/Desktop/Bot/Download${Location}MP4/${Code}_2.mp3`))
+        .pipe(fs.createWriteStream(`./Download${Location}MP4/${Code}_2.mp3`))
         .on('finish', async () => {
               ffmpeg(File)
-              .addInput(`C:/Users/alexi/Desktop/Bot/Download${Location}MP4/${Code}_2.mp3`)
-              .output(`C:/Users/alexi/Desktop/Bot/Download${Location}work_${Code}.mp4`)
+              .addInput(`./Download${Location}MP4/${Code}_2.mp3`)
+              .output(`./Download${Location}work_${Code}.mp4`)
               .on('end', async () => {
-                await fs.renameSync(`C:/Users/alexi/Desktop/Bot/Download${Location}work_${Code}.mp4`, File);
-                fs.unlinkSync(`C:/Users/alexi/Desktop/Bot/Download${Location}MP4/${Code}_2.mp3`);
+                await fs.renameSync(`./Download${Location}work_${Code}.mp4`, File);
+                fs.unlinkSync(`./Download${Location}MP4/${Code}_2.mp3`);
                 SendFile();
               })
               .on('progress', async function(progress) {
@@ -1043,7 +1043,7 @@ if(message.content.startsWith(Prefix + `set`)){
       var LOCATION = db.get(`Location`)
       var TITLE = db.get(`Title2_${Code}`)
       var AUTHOR = db.get(`Author_${Code}`)
-      var File = `C:/Users/alexi/Desktop/Bot/Download${Location}MP${format}/${TITLE}.mp${format}`
+      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
       var IMAGE = db.get(`Image_${Code}`)
       ffmpeg(File)
       .outputOptions('-metadata', 'title=' + TITLE)
@@ -1072,7 +1072,7 @@ if(message.content.startsWith(Prefix + `set`)){
     async function SendFile() {
       var format = db.get(`Format`)
       var TITLE = db.get(`Title2_${Code}`)
-      var File = `C:/Users/alexi/Desktop/Bot/Download${Location}MP${format}/${TITLE}.mp${format}`
+      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
       var File_Size = await getFilesizeInBytes(File)
       if(File_Size < (8 * 1000 * 1000)) {
         const attachment = new Discord.MessageAttachment(File, `${TITLE}.mp${format}`);
