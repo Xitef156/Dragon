@@ -12,7 +12,20 @@ const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 var Download = require('image-downloader');
-// App
+
+const express = require('express')
+const app = express()
+const port = 8080
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`)
+})
+
+
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
