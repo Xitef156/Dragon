@@ -1,6 +1,5 @@
 const Discord = require('discord.js');require('@discordjs/opus');const Voice = require('@discordjs/voice');
 require('opusscript');require('libsodium-wrappers');require('tweetnacl');
-const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
 const Canvas = require('canvas');
 const weather = require('weather-js');
@@ -8,10 +7,7 @@ const db = require('quick.db');
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
-const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
-const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
-var Download = require('image-downloader');
 const express = require('express')
 const app = express()
 const port = 8080
@@ -62,11 +58,10 @@ const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
 const Ch_Cmd = '777937994245996545'
-const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.IOSFElPVclc_xhGbzBy9sQtE6fs`
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
-registerFont(`C:/Users/alexi/Desktop/Bot/${Font}.ttf`, {family: Font})
+registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
 const Font_Size_max = 80
 const Font_Size_min = 50
@@ -102,35 +97,6 @@ function youtube_parser(url = String){
   var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
   var match = url.match(regExp);
   return (match&&match[7].length==11)? match[7] : url;
-}
-
-const songFinder = async (search) => {
-    return new Promise((resolve, reject) => {
-    var ARGS = search.replace('sc ', '').replace('soundlcoud', '').replace('  ', ' ').replace('  ', ' ')
-    if(search.includes(`soundcloud.com`)){
-        if(ARGS.includes(`?in=`)) var Args = ARGS.substring(0, ARGS.indexOf(`?in=`)).replace(' ', '')
-        else var Args = ARGS.replace(' ', '')
-        SC.getSongInfo(Args).then((data,err) => {
-          if(err) {
-            reject(err)
-            return;
-          } else resolve(data)
-        })
-    }
-    else {
-        SC.search(ARGS).then(Song => {
-          SC.getSongInfo(Song[0].url).then(song => resolve(song))
-        })
-      }
-    })
-}
-
-const videoFinder = async (search) => {
-  var Search = await youtube_parser(search)
-  if(Search.length === 11) var videoResult1 = await ytSearch({ videoId: `${Search}` })
-  else var videoResult2 = await ytSearch({ query: `${Search}` })
-  if(videoResult1) return videoResult1
-  else return videoResult2.videos[0];
 }
 
 async function guild_create(guild) {
@@ -200,7 +166,7 @@ async function canvas_card(member, type = String, color = String, color1 = Strin
   
 	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
-	const background = await Canvas.loadImage(`C:/Users/alexi/Desktop/Bot/wallpaper${x}.png`);
+	const background = await Canvas.loadImage(`./wallpaper${x}.png`);
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
   var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
   grd.addColorStop(0, color);
@@ -337,11 +303,11 @@ async function Message(message){
 
 Client.on(`ready`, async () => {
   const upgraded = await ncu.run({
-      packageFile: 'C:/Users/alexi/Desktop/Bot/package.json',
+      packageFile: './package.json',
       upgrade: true,
     })
     console.log(upgraded);
-  var dir = 'C:/Users/alexi/Desktop/Bot/Guilds_Bot';
+  var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
@@ -350,8 +316,8 @@ setInterval(() => {
   Client.user.setActivity(`${date}`)
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
-      if(!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
-      var obj = JSON.parse(fs.readFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`));
+      if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
+      var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
       [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
         if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
         if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
@@ -398,7 +364,7 @@ setInterval(() => {
       }
       }
       let data = JSON.stringify(Guild, null, 2)
-      fs.writeFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`, data);
+      fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
   })
             });
 	process.on('uncaughtException', error => {
@@ -549,7 +515,7 @@ Client.on(`guildMemberAdd`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`]});
+  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`./Custom/Welcome/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Welcome`, `#00fbff`, `#53dad8`, `#0c00ff`)
 	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
@@ -591,7 +557,7 @@ Client.on(`guildMemberRemove`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`]});
+  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`./Custom/Left/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Left`, `#ff0000`, `#ff2e00`, `#ff5d00`)
 	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
@@ -858,7 +824,6 @@ if(message.content.startsWith(Prefix + `set`)){
       Embed.addField(`${Prefix}prefix`, `Change le prefix du bot pour le serveur`, true)
       Embed.addField(`${Prefix}stat`, `Statistiques du joueur`, true)
       Embed.addField(`${Prefix}role`, `Créer un changement pour les roles dans le serveur`, true)
-      Embed.addField(`${Prefix}queue`, `Montre la liste des musiques du serveur`, true)
       Embed.addField(`${Prefix}membercount`, `Affiche le nombre de joueur sur le serveur`, true)
       Embed.addField(`${Prefix}invite`, `Donne en mp l'url du bot/serveur`, true)
       Embed.addField(`${Prefix}ban`, `Permet de Ban le joueur mentionné du serveur`, true)
@@ -1269,4 +1234,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(Token);
+Client.login(process.env.TOKEN);
