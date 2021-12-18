@@ -12,7 +12,6 @@ const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
 const ncu = require('npm-check-updates');
 var Download = require('image-downloader');
-
 const express = require('express')
 const app = express()
 const port = 8080
@@ -24,8 +23,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
-
-
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -65,10 +62,11 @@ const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
 const Ch_Cmd = '777937994245996545'
+const Token = `Nzg4MDc2NDIyNzc4MDYwOTIw.X9ePXA.IOSFElPVclc_xhGbzBy9sQtE6fs`
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
-registerFont(`./${Font}.ttf`, {family: Font})
+registerFont(`C:/Users/alexi/Desktop/Bot/${Font}.ttf`, {family: Font})
 moment.locale('fr');
 const Font_Size_max = 80
 const Font_Size_min = 50
@@ -98,49 +96,6 @@ function sleep(s = Int32Array) {
   return new Promise((resolve) => {
     setTimeout(resolve, (s * 1000));
   });
-}
-
-async function play(guild){
-  var connection = Voice.getVoiceConnection(guild)
-  var Songs = queue.get(guild)
-  var Song = Songs[0];
-  if (!Song) {
-    connection.destroy();
-    queue.delete(guild.id);
-    return;
-  }
-  async function Audio(song){
-    console.log(song)
-  if(song.type == 'sc') {
-    SC.getSongInfo(song.url).then(async Song => {
-    await Song.downloadProgressive().then(stream => Play(stream))
-  })
-}
-  else {
-    var Stream = await ytdl(`${song.url}`, { filter : 'audioonly'})
-    Play(Stream);
-  }
-}
-Audio(Song)
-  async function Play(stream){
-  var STREAM = await Voice.createAudioResource(stream, { inputType: Voice.StreamType.Arbitrary });
-  console.log(STREAM)
-  player.play(STREAM)
-  connection.subscribe(player);
-  player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    console.log(`fini`)
-    if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
-    else {
-      await Songs.shift();
-    if (!Song[0]) {
-      connection.destroy();
-      queue.delete(guild.id);
-      return;
-    }
-    play(guild);
-    }
-  })
-  }
 }
 
 function youtube_parser(url = String){
@@ -245,7 +200,7 @@ async function canvas_card(member, type = String, color = String, color1 = Strin
   
 	const canvas = Canvas.createCanvas(Canvas_Larg, Canvas_Haut);
 	const ctx = canvas.getContext('2d');
-	const background = await Canvas.loadImage(`./wallpaper${x}.png`);
+	const background = await Canvas.loadImage(`C:/Users/alexi/Desktop/Bot/wallpaper${x}.png`);
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
   var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
   grd.addColorStop(0, color);
@@ -382,11 +337,11 @@ async function Message(message){
 
 Client.on(`ready`, async () => {
   const upgraded = await ncu.run({
-      packageFile: './package.json',
+      packageFile: 'C:/Users/alexi/Desktop/Bot/package.json',
       upgrade: true,
     })
     console.log(upgraded);
-  var dir = './Guilds_Bot';
+  var dir = 'C:/Users/alexi/Desktop/Bot/Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
@@ -395,8 +350,8 @@ setInterval(() => {
   Client.user.setActivity(`${date}`)
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
-      if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
-      var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
+      if(!fs.existsSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
+      var obj = JSON.parse(fs.readFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`));
       [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
         if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
         if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
@@ -443,7 +398,7 @@ setInterval(() => {
       }
       }
       let data = JSON.stringify(Guild, null, 2)
-      fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
+      fs.writeFileSync(`C:/Users/alexi/Desktop/Bot/Guilds_Bot/${guild.id}.json`, data);
   })
             });
 	process.on('uncaughtException', error => {
@@ -594,7 +549,7 @@ Client.on(`guildMemberAdd`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`./Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`./Custom/Welcome/${member.id}.png`]});
+  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`)) return channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Welcome/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Welcome`, `#00fbff`, `#53dad8`, `#0c00ff`)
 	channel.send({content: `Bienvenue dans le serveur, ${member}!`, files: [attachment]});
@@ -636,7 +591,7 @@ Client.on(`guildMemberRemove`, async member => {
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
-  if(fs.existsSync(`./Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`./Custom/Left/${member.id}.png`]});
+  if(fs.existsSync(`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`)) return channel.send({content: `Au revoir, ${member}!`, files: [`C:/Users/alexi/Desktop/Bot/Custom/Left/${member.id}.png`]});
   else {
     const attachment = await canvas_card(member, `Left`, `#ff0000`, `#ff2e00`, `#ff5d00`)
 	channel.send({content: `Au revoir, ${member}!`, files: [attachment]});
@@ -903,13 +858,7 @@ if(message.content.startsWith(Prefix + `set`)){
       Embed.addField(`${Prefix}prefix`, `Change le prefix du bot pour le serveur`, true)
       Embed.addField(`${Prefix}stat`, `Statistiques du joueur`, true)
       Embed.addField(`${Prefix}role`, `Créer un changement pour les roles dans le serveur`, true)
-      Embed.addField(`${Prefix}join`, `Le bot vient dans votre vocal`, true)
-      Embed.addField(`${Prefix}leave`, `Le bot quitte votre vocal`, true)
-      Embed.addField(`${Prefix}play`, `Le bot joue de la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}skip`, `Le bot passe la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}loop`, `Le bot joue en boucle la musique dans votre vocal`, true)
       Embed.addField(`${Prefix}queue`, `Montre la liste des musiques du serveur`, true)
-      Embed.addField(`${Prefix}volume`, `Modifie le volume dans votre vocal (à la fin de la musique en cours)`, true)
       Embed.addField(`${Prefix}membercount`, `Affiche le nombre de joueur sur le serveur`, true)
       Embed.addField(`${Prefix}invite`, `Donne en mp l'url du bot/serveur`, true)
       Embed.addField(`${Prefix}ban`, `Permet de Ban le joueur mentionné du serveur`, true)
@@ -920,7 +869,6 @@ if(message.content.startsWith(Prefix + `set`)){
       Embed.addField(`${Prefix}say_`, `Fait parler le bot`, true)
       Embed.addField(`${Prefix}set`, `Paramètre le bot`, true)
       Embed.addField(`${Prefix}view`, `Vois les paramètres de bot`, true)
-      Embed.addField(`${Prefix}download_`, `Télécharge votre musique/vidéo (Youtube et Soundcloud)`, true)
       Embed.addField(`${Prefix}search_`, `Cherche votre musique/vidéo (Youtube et Soundcloud)`, true)
         message.channel.send({ embeds: [Embed]})
     }
@@ -938,164 +886,6 @@ if(message.content.startsWith(Prefix + `set`)){
       .setTimestamp()
       .setFooter(`Team Dragon`, Client.user.displayAvatarURL())
       message.channel.send({ embeds: [embed]})
-  }
-
-  if(message.content.startsWith(Prefix + `download`)){
-	  if(process.env.process.env.TOKEN) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
-    if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
-    (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
-    if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
-    if (!fs.existsSync(`./Download/MP4`)) fs.mkdirSync(`./Download/MP4`);
-    if (!fs.existsSync(`./Download/Others/MP3`)) fs.mkdirSync(`./Download/Others/MP3`);
-    if (!fs.existsSync(`./Download/Others/MP4`)) fs.mkdirSync(`./Download/Others/MP4`);
-    message.channel.send(`Recherche en cours...`)
-    console.log(`yes`)
-    if(AuthifCreator) var Location = `/`
-    else var Location = `/Others/`
-    var Code = makeid(10)
-    var Title = remSpCh(`${message.author.tag} - ${Code}`)
-    if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
-      var search = args.join(` `)
-        await songFinder(search).then(async song => {
-            message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-            if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
-            var File = `./Download${Location}MP3/${Title}.mp3`
-            const url = song.thumbnail
-        const options = {
-          url: url,
-          dest: `./Download/${song.id}.png`                // will be saved to /path/to/dest/image.jpg
-        }
-        Download.image(options)
-              const stream = await song.downloadProgressive();
-              setTimeout(async () => {
-              const writer = stream.pipe(fs.createWriteStream(File));
-              writer.on("finish", () => {
-        db.set(`Title1_${Code}`, song.title)
-        db.set(`Author_${Code}`, song.author.name)
-        db.set(`Format`, 3)
-        db.set(`Image_${Code}`, `./Download/${song.id}.png`)
-        db.set(`Title2_${Code}`, Title)
-        db.set(`Location`, `./Download${Location}work${Code}.mp3`)
-        db.set(`Code_Image_${Code}`, `./Download/${song.id}.png`)
-        db.set(`Format`, 3)
-        ChangeFile()
-              })
-            })
-          }, 5000)
-} else {
-      var format = `4`
-    if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
-      var format = `3`
-      var filter = `audio`
-      var vid = args.join(` `).replace(`mp3`, ``)
-      console.log(`0`)
-      } else {
-      var format = `4`
-      var filter = `video`
-      var vid = args.join(` `)
-    }
-    db.set(`Format`, format)
-    const video = await videoFinder(vid)
-    if(message.author.id == CreatorID) var Title = remSpCh(video.title)
-    const stream = ytdl(video.url, {
-      filter: `${filter}only`,
-      quality: 'highest'
-    })
-    var File = `./Download${Location}MP${format}/${Title}.mp${format}`
-    if(format == `3`){
-  const options = {
-    url: video.image,
-    dest: `./Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
-  }
-  Download.image(options)
-  console.log(`Image Download`)
-  db.set(`Title_${Code}`, video.title)
-  db.set(`Author_${Code}`, video.author.name)
-  db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
-  db.set(`Location`, `./Download${Location}work${Code}.mp${format}`)
-}
-      db.set(`Title2_${Code}`, Title)
-              db.set(`Title_${video.videoId}`, video.title)
-              db.set(`Duration_${video.videoId}`, video.timestamp)
-    message.channel.send(`Téléchargement de **${video.title}.mp${format}** de **${video.author.name}** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-    const download = stream.pipe(fs.createWriteStream(File))
-    download.on('finish', async () => {
-      console.log(`Fichier téléchargé`)
-      if(format == `4`) {
-        ytdl(video.url, {
-          filter: 'audioonly',
-          quality: 'highest'
-        })
-        .pipe(fs.createWriteStream(`./Download${Location}MP4/${Code}_2.mp3`))
-        .on('finish', async () => {
-              ffmpeg(File)
-              .addInput(`./Download${Location}MP4/${Code}_2.mp3`)
-              .output(`./Download${Location}work_${Code}.mp4`)
-              .on('end', async () => {
-                await fs.renameSync(`./Download${Location}work_${Code}.mp4`, File);
-                fs.unlinkSync(`./Download${Location}MP4/${Code}_2.mp3`);
-                SendFile();
-              })
-              .on('progress', async function(progress) {
-                await sleep(2)
-                if(pourc !== Math.round(progress.percent * 1) / 1){
-                console.log(`Downloading... (${Math.round(progress.percent * 1) / 1}%)`)
-                var pourc = Math.round(progress.percent * 1) / 1
-                }
-              })
-              .run()
-            })
-      } else ChangeFile()
-      })
-  await sleep(2);
-    if(getFilesizeInBytes(File) === 0) message.channel.send(`Cette vidéo ne peut pas se télécharger`);
-}
-    function ChangeFile() {
-      message.channel.send(`50%...`)
-      var format = db.get(`Format`)
-      var LOCATION = db.get(`Location`)
-      var TITLE = db.get(`Title2_${Code}`)
-      var AUTHOR = db.get(`Author_${Code}`)
-      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
-      var IMAGE = db.get(`Image_${Code}`)
-      ffmpeg(File)
-      .outputOptions('-metadata', 'title=' + TITLE)
-      .outputOptions('-metadata', 'artist=' + AUTHOR)
-      .output(LOCATION)
-      .on('end', () => {
-        const Tag = { image: IMAGE }
-        NodeID3.update(Tag, LOCATION)
-        function check2() {
-          setTimeout(async () => {
-          var tag = NodeID3.read(LOCATION)
-          if(!tag.image) check2();
-          else {
-            await fs.unlinkSync(File)
-            fs.renameSync(LOCATION, File)
-            fs.unlinkSync(IMAGE)
-            SendFile()
-          }
-          }, 5000)
-        }
-        check2();
-  })
-  .on('process', async process => console.log(Math.round(process.percent * 1) / 1))
-      .run()
-    }
-    async function SendFile() {
-      var format = db.get(`Format`)
-      var TITLE = db.get(`Title2_${Code}`)
-      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
-      var File_Size = await getFilesizeInBytes(File)
-      if(File_Size < (8 * 1000 * 1000)) {
-        const attachment = new Discord.MessageAttachment(File, `${TITLE}.mp${format}`);
-        message.channel.send({content: `**${TITLE}** a été téléchargé avec succès`, files: [attachment]});
-      }
-      else {
-        if(message.author.id == CreatorID) message.channel.send(`**${Title}** a été téléchargé avec succès (Download/MP${format}/${Title}.mp${format})`);
-        else message.channel.send(`**${Title}** a été téléchargé avec succès mais le fichier est trop lourd (**${Math.round(File_Size * 1) / 1}**Mo), veuillez envoyé ce code : **${Code}** à **${CreatorTag}**)`)
-      }
-    }
   }
 
 if(AuthifCreator){
@@ -1417,144 +1207,6 @@ if(message.content.startsWith(Prefix + `list`)){
     })
   }
 
-    if(message.content == Prefix + `join`){
-      if(!message.member.voice.channel.id) return message.channel.send(`Je ne suis n\'es pas en vocal`)
-      if (!Client.voice.adapters.get(message.guild.id)) {
-      Voice.joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator
-    }).removeAllListeners()
-  }
-}
-
-if(message.content.startsWith(Prefix + `play`)){
-  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
-  const permissions = message.member.voice.channel.permissionsFor(message.member.user);
-  if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
-  if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
-  if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
-  var Songs = queue.get(message.guild.id);
-              if (!Client.voice.adapters.get(message.guild.id)) {
-              var connection = Voice.joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guild.id,
-                adapterCreator: message.guild.voiceAdapterCreator
-            }).removeAllListeners()
-          }
-
-  if(args[0] == `soundcloud` || args[0] == `sc`){
-    await message.channel.send(`Recherche de **${args.join(' ')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
-      const song = await songFinder(args.join(' '))
-            const New = new Discord.MessageEmbed()
-            if(!song) return message.channel.send(`Rien trouvée`)
-            var SONG = {
-              type: 'sc',
-              title: song.title,
-              url: song.url,
-              author: {
-                name: song.author.name,
-                url: song.author.url
-              },
-              url: song.url,
-              duration: song.duration,
-            };
-            if (!Songs) {
-              var Song = [];
-              queue.set(message.guild.id, Song);
-              Song.push(SONG);
-              New.setColor('#ff5d00')
-              play(message.guild.id, connection)
-            } else {
-              queue.push(SONG);
-              New.setColor('FUCHSIA')
-            }
-              New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
-              message.channel.send({ embeds : [New]})
-            } else {
-            await message.channel.send(`Recherche de **${args.join(' ')}** sur Youtube`).then((msg => msg.suppressEmbeds(true)))
-            const video = await videoFinder(args.join(' '));
-
-            if(video){
-              const New = new Discord.MessageEmbed()
-              var song = {
-                type: 'ytb',
-                id: video.videoId,
-                title: video.title,
-                url: video.url,
-                author: {
-                  name: video.author.name,
-                  url: video.author.url
-                },
-                url: video.url,
-                duration: video.timestamp,
-              };
-              if (!Songs) {
-                var Songs = [];
-                queue.set(message.guild.id, Songs);
-                Songs.push(song);
-                play(message.guild.id, message.channel, 0);
-                New.setColor('RED')
-              } else {
-                Songs.push(song);
-                New.setColor(`#0xd677ff`)
-              }
-            New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
-            message.channel.send({ embeds : [New]})
-          } else {
-              message.channel.send(`Pas de vidéo trouvée`)
-                   queue.delete(message.guild.id);
-                   return;
-                 }
-                }
-              }
-
-if(message.content == Prefix + `leave`){
-  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
-  queue.delete(message.guild.id);
-  Voice.getVoiceConnection(message.guild.id).disconnect();
-  message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
-              }
-
-if(message.content == Prefix + `skip`){
-  var Songs = queue.get(message.guild.id);
-  if(!Songs[0]) {
-    await Voice.getVoiceConnection(message.guild.id).disconnect();
-    return message.channel.send(`Il y a rien a skip`)
-  } else {
-    await Songs.shift()
-    await player.stop()
-    await Voice.getVoiceConnection(message.guild.id).removeAllListeners()
-    await play(message.guild.id)
-  message.channel.send(`Skipped !`)
-  }
-}
-
-if(message.content == Prefix + `queue`){
-  var Songs = queue.get(message.guild.id);
-if(!Songs) return message.channel.send(`Il y a rien a voir`)
-const Queue = new Discord.MessageEmbed()
-.setColor(`#00ffff`)
-.setTitle(`Queue de ${message.guild.name}`)
-await Songs.forEach((song, index) => Queue.addField(`${index}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
-await message.channel.send({ embeds: [Queue]})
-}
-
-if(message.content === Prefix + `loop`){
-  if(db.get(`guild_${message.guild.id}_Music_Looping`) === true){
-    db.set(`guild_${message.guild.id}_Music_Looping`, false)
-    message.channel.send(`Loop désactivé`)
-  } else {
-    db.set(`guild_${message.guild.id}_Music_Looping`, true)
-    message.channel.send(`Loop activé`)
-  }
-}
-if(message.content.startsWith(Prefix + `volume`)){
-  if(!args[0]) return message.channel.send(`Le volume du serveur est à ${db.get(`guild_${message.guild.id}_Volume`)}`)
-  db.set(`guild_${message.guild.id}_Volume`, args[0])
-  message.channel.send(`Le volume est maintenant de ${args[0]}`)
-}
-
 if(message.content == Prefix + `left`){
   if(message.author.id !== message.guild.ownerId || AuthifNotCreator) return message.channel.send(`Tu n'es pas le chef du serveur`);
     await message.channel.send(`Adieu...`)
@@ -1617,4 +1269,4 @@ if(message.content == `forget_prefix`) return message.channel.send(Prefix)
 if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
 
-Client.login(process.env.TOKEN);
+Client.login(Token);
