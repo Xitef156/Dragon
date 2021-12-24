@@ -101,6 +101,7 @@ async function play(guild){
   var connection = Voice.getVoiceConnection(guild)
   var Songs = queue.get(guild)
   var Song = Songs[0];
+  console.log(connection)
   if (!Song) {
     connection.destroy();
     queue.delete(guild.id);
