@@ -319,7 +319,7 @@ setInterval(() => {
 	if(Year !== noel){
     Client.guilds.cache.forEach(g => {
       var channel = db.get(`guild_${g.id}_EventChannel`)
-      g.channels.cache.get(channel).send(`@everyone Joyeux Noël :partying_face:`)
+      console.log(`${g.name} ; ${Client.channels.cache.get(channel).name}`)
     })
 	}
 }, 30000);
