@@ -314,16 +314,6 @@ Client.on(`ready`, async () => {
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
   Client.user.setActivity(`${date}`)
-	var Year = moment().format('YYYY');
-	var noel = db.get('noel');
-	if(Year !== noel){
-    Client.guilds.cache.forEach(g => {
-      if(g.id !== 787081936719708221) return;
-      var channel = db.get(`guild_${g.id}_EventChannel`)
-      console.log(channel)
-      console.log(`${g.name} ; ${Client.channels.cache.get(channel).name}`)
-    })
-	}
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
       if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
