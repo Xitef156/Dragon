@@ -107,7 +107,6 @@ async function play(guild){
     return;
   }
   async function Audio(song){
-    console.log(song)
   if(song.type == 'sc') {
     SC.getSongInfo(song.url).then(async Song => {
     await Song.downloadProgressive().then(stream => Play(stream))
@@ -121,11 +120,9 @@ async function play(guild){
 Audio(Song)
   async function Play(stream){
   var STREAM = await Voice.createAudioResource(stream, { inputType: Voice.StreamType.Arbitrary });
-  console.log(STREAM)
   player.play(STREAM)
   connection.subscribe(player);
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    console.log(`fini`)
     if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
     else {
       await Songs.shift();
@@ -938,7 +935,7 @@ if(message.content.startsWith(Prefix + `set`)){
   }
 
   if(message.content.startsWith(Prefix + `download`)){
-	  if(process.env.process.env.TOKEN) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
+	  if(process.env.TOKEN) return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
     if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
     (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
     if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
@@ -946,7 +943,6 @@ if(message.content.startsWith(Prefix + `set`)){
     if (!fs.existsSync(`./Download/Others/MP3`)) fs.mkdirSync(`./Download/Others/MP3`);
     if (!fs.existsSync(`./Download/Others/MP4`)) fs.mkdirSync(`./Download/Others/MP4`);
     message.channel.send(`Recherche en cours...`)
-    console.log(`yes`)
     if(AuthifCreator) var Location = `/`
     else var Location = `/Others/`
     var Code = makeid(10)
@@ -985,7 +981,6 @@ if(message.content.startsWith(Prefix + `set`)){
       var format = `3`
       var filter = `audio`
       var vid = args.join(` `).replace(`mp3`, ``)
-      console.log(`0`)
       } else {
       var format = `4`
       var filter = `video`
@@ -1370,7 +1365,6 @@ if(message.content.startsWith(Prefix + `list`)){
 }
 
       if(message.content.startsWith(Prefix + `clear`)){
-        console.log(parseInt(args[0]))
         var amount = parseInt(args[0]); // Amount of messages which should be deleted
         var Reset = 0
         if(AuthifCreator) var Reset = 1
