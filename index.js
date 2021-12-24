@@ -1565,7 +1565,8 @@ if(message.content.startsWith(Prefix + `search`)){
     var result = 35
   }
   if((args[0] || args[1]) == ('sc' ||'soundcloud')){
-    await SC.search(search).then(async Songs => {
+    var Search = search.replace('sc ', '')
+    await SC.search(Search).then(async Songs => {
       var songs = Songs.slice( 0, result )
       if(!songs[0]) return message.channel.send(`Rien trouvé`)
       await songs.forEach(async (Song,index) => {
@@ -1573,7 +1574,7 @@ if(message.content.startsWith(Prefix + `search`)){
   const Search2 = new Discord.MessageEmbed()
   .setColor(Bot_Color)
   .setImage(song.thumbnail)
-  .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${search}`)
+  .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
   await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
   await message.channel.send({ embeds: [Search2]})
         })
