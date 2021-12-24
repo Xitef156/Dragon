@@ -318,7 +318,9 @@ setInterval(() => {
 	var noel = db.get('noel');
 	if(Year !== noel){
     Client.guilds.cache.forEach(g => {
+      if(g.id !== 787081936719708221) return;
       var channel = db.get(`guild_${g.id}_EventChannel`)
+      console.log(channel)
       console.log(`${g.name} ; ${Client.channels.cache.get(channel).name}`)
     })
 	}
