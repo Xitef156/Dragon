@@ -1435,8 +1435,8 @@ if(message.content.startsWith(Prefix + `play`)){
           }
 
   if(args[0] == `soundcloud` || args[0] == `sc`){
-    await message.channel.send(`Recherche de **${args.join(' ')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
-      const song = await songFinder(args.join(' '))
+    await message.channel.send(`Recherche de **${args.join(' ').replace('sc ', '')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
+      const song = await songFinder(args.join(' ').replace('sc ', ''))
             const New = new Discord.MessageEmbed()
             if(!song) return message.channel.send(`Rien trouvée`)
             var SONG = {
