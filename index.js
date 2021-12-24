@@ -317,7 +317,10 @@ setInterval(() => {
 	var Year = moment().format('YYYY');
 	var noel = db.get('noel');
 	if(Year !== noel){
-	  Client.guilds.cache.forEach(g => console.log(g.systemChannel.name))
+    Client.guilds.cache.forEach(g => {
+      var channel = db.get(`guild_${g.id}_EventChannel`)
+      g.channels.cache.get(channel).send(`@everyone Joyeux Noël :partying_face:`)
+    })
 	}
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
@@ -815,6 +818,31 @@ if(message.content.startsWith(Prefix + `set`)){
         db.set(`guild_${message.guild.id}_MemberRemove`, args[2])
         var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
         message.channel.send(`Le channel ${Ch} est maintenant le lieu du message d'adieu`)
+      }
+    }
+    } else if(args[1] == `event`){
+      if(!args[2]) {
+        db.set(`guild_${message.guild.id}_EventChannel`, Channel.id)
+        message.channel.send(`Le channel ${Channel} est maintenant le channel event`)
+      }
+    else if(args[2]){
+      if(isNaN(args[2])){
+      if(args[2] == `on`){
+        db.set(`guild_${message.guild.id}_EventChannel`, `On`)
+        message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant activé`);
+      } else if(args[2] == `off`){
+        db.set(`guild_${message.guild.id}_EventChannel`, `Off`)
+        message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant désactivé`);
+      } else {
+        var Channel = message.guild.channels.cache.find(ch => ch.name == args[2])
+        db.set(`guild_${message.guild.id}_EventChannel`, Channel.id)
+        message.channel.send(`Le channel ${Channel} est maintenant le channel event`)
+      }
+      } else {
+        if(!message.guild.channels.cache.find(ch => ch.id == args[2])) return;
+        db.set(`guild_${message.guild.id}_EventChannel`, args[2])
+        var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
+        message.channel.send(`Le channel ${Ch} est maintenant le channel event`)
       }
     }
     }
