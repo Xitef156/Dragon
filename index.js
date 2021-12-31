@@ -1461,7 +1461,12 @@ if(message.content.startsWith(Prefix + `play`)){
               queue.push(SONG);
               New.setColor('FUCHSIA')
             }
-              New.setTimestamp().setThumbnail(song.thumbnail).setTitle(song.title).setAuthor(song.author.name).setURL(song.url).setFooter(`Vidéo ID : ${song.id} ; Duration : ${song.duration}`)
+              New.setTimestamp()
+		      .setThumbnail(song.thumbnail)
+		      .setTitle(song.title)
+		      .setAuthor({name: song.author.name})
+		      .setURL(song.url)
+		      .setFooter({ text: `Vidéo ID : ${song.id} ; Duration : ${song.duration}`})
               message.channel.send({ embeds : [New]})
             } else {
             await message.channel.send(`Recherche de **${args.join(' ')}** sur Youtube`).then((msg => msg.suppressEmbeds(true)))
