@@ -127,7 +127,7 @@ Audio(Song)
     else {
     if (!Songs[1]) {
       connection.destroy();
-      queue.delete(guild.id);
+      queue.delete(guild);
       return;
     } else {
       await Songs.shift();
@@ -1456,7 +1456,7 @@ if(message.content.startsWith(Prefix + `play`)){
               queue.set(message.guild.id, Song);
               Song.push(SONG);
               New.setColor('#ff5d00')
-              play(message.guild.id, connection)
+              play(message.guild.id)
             } else {
               queue.push(SONG);
               New.setColor('FUCHSIA')
@@ -1490,7 +1490,7 @@ if(message.content.startsWith(Prefix + `play`)){
                 var Songs = [];
                 queue.set(message.guild.id, Songs);
                 Songs.push(song);
-                play(message.guild.id, message.channel, 0);
+                play(message.guild.id);
                 New.setColor('RED')
               } else {
                 Songs.push(song);
