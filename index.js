@@ -126,12 +126,13 @@ Audio(Song)
     if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
     else {
     if (!Songs[1]) {
-      await Songs.shift();
       connection.destroy();
       queue.delete(guild.id);
       return;
-    }
+    } else {
+      await Songs.shift();
     play(guild);
+    }
     }
   })
   }
