@@ -1491,7 +1491,12 @@ if(message.content.startsWith(Prefix + `play`)){
                 Songs.push(song);
                 New.setColor(`#0xd677ff`)
               }
-            New.setTimestamp().setThumbnail(video.image).setTitle(video.title).setAuthor(video.author.name).setURL(video.url).setFooter(`Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`)
+            New.setTimestamp()
+            .setThumbnail(video.image)
+            .setTitle(video.title)
+            .setURL(video.url)
+            .setAuthor({name: video.author.name})
+            .setFooter({text: `Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`});
             message.channel.send({ embeds : [New]})
           } else {
               message.channel.send(`Pas de vidéo trouvée`)
