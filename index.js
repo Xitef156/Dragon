@@ -1513,15 +1513,16 @@ if(message.content.startsWith(Prefix + `play`)){
 
 if(message.content == Prefix + `leave`){
   if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
+    await player.stop()
   queue.delete(message.guild.id);
-  Voice.getVoiceConnection(message.guild.id).disconnect();
+  Voice.getVoiceConnection(message.guild.id).destroy();
   message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
               }
 
 if(message.content == Prefix + `skip`){
   var Songs = queue.get(message.guild.id);
   if(!Songs[0]) {
-    await Voice.getVoiceConnection(message.guild.id).disconnect();
+    await Voice.getVoiceConnection(message.guild.id).destroy();
     return message.channel.send(`Il y a rien a skip`)
   } else {
     await Songs.shift()
