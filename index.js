@@ -101,7 +101,6 @@ async function play(guild){
   var connection = Voice.getVoiceConnection(guild)
   var Songs = queue.get(guild)
   var Song = Songs[0];
-  console.log(connection)
   if (!Song) {
     connection.destroy();
     queue.delete(guild.id);
@@ -126,8 +125,8 @@ Audio(Song)
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
     if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
     else {
+    if (!Songs[1]) {
       await Songs.shift();
-    if (!Song) {
       connection.destroy();
       queue.delete(guild.id);
       return;
