@@ -97,10 +97,17 @@ function sleep(s = Int32Array) {
   });
 }
 
-async function play(guild){
+async function play(guild,channel,adaptater){
   var connection = Voice.getVoiceConnection(guild)
   var Songs = queue.get(guild)
   var Song = Songs[0];
+  if(!connection) {
+      var connection = Voice.joinVoiceChannel({
+    channelId: channel,
+    guildId: guild,
+    adapterCreator: adaptater
+}).removeAllListeners()
+  }
   if (!Song) {
     connection.destroy();
     queue.delete(guild.id);
@@ -131,7 +138,7 @@ Audio(Song)
       return;
     } else {
       await Songs.shift();
-    play(guild);
+    play(guild,channel,adaptater);
     }
     }
   })
@@ -170,7 +177,11 @@ const videoFinder = async (search) => {
   if(Search.length === 11) var videoResult1 = await ytSearch({ videoId: `${Search}` })
   else var videoResult2 = await ytSearch({ query: `${Search}` })
   if(videoResult1) return videoResult1
-  else return videoResult2.videos[0];
+  else if(videoResult2) return videoResult2.videos[0];
+  else {
+    var videoResult3 = await ytSearch({ query: `${Search}` });
+    return videoResult3.videos[0];
+  }
 }
 
 async function guild_create(guild) {
@@ -1456,7 +1467,7 @@ if(message.content.startsWith(Prefix + `play`)){
               queue.set(message.guild.id, Song);
               Song.push(SONG);
               New.setColor('#ff5d00')
-              play(message.guild.id)
+              play(message.guild.id,message.member.voice.channel.id,message.guild.voiceAdapterCreator)
             } else {
               queue.push(SONG);
               New.setColor('FUCHSIA')
@@ -1490,7 +1501,7 @@ if(message.content.startsWith(Prefix + `play`)){
                 var Songs = [];
                 queue.set(message.guild.id, Songs);
                 Songs.push(song);
-                play(message.guild.id);
+                play(message.guild.id,message.member.voice.channel.id,message.guild.voiceAdapterCreator);
                 New.setColor('RED')
               } else {
                 Songs.push(song);
