@@ -25,6 +25,7 @@
     "node": "^17.5.0"
   },
   "scripts": {
-    "build": "node index.js"
+    "start": "node index.js",
+    "build": "npm rebuild && npm start"
   }
 }
