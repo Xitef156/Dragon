@@ -25,6 +25,6 @@
     "node": "^17.5.0"
   },
   "scripts": {
-    "start": "node index.js"
+    "build": "node index.js"
   }
 }
