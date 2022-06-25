@@ -1,27 +1,14 @@
 const Discord = require('discord.js');const Voice = require('@discordjs/voice');
-require('opusscript');require('libsodium-wrappers');require('tweetnacl');
 const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
 const Canvas = require('canvas');
 const weather = require('weather-js');
-const db = require('quick.db');
+const db = require('quick.db');require('better-sqlite3');
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
-const ffmpeg = require('fluent-ffmpeg');require('ffmpeg-static');
 const NodeID3 = require('node-id3');
-const ncu = require('npm-check-updates');
 var Download = require('image-downloader');
-const express = require('express')
-const app = express()
-const port = 8080
-
-app.get('/', (req, res) => {
-res.send('Hello World!')
-})
-
-app.listen(port, () => {
-console.log(`Example app listening at http://localhost:${port}`)})
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -61,7 +48,6 @@ const Hack_Guild_ID = '880444663914459166'
 const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
 const Ch_Cmd = '777937994245996545'
-
 const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
 const Font = 'Vermin Vibes'
 const { registerFont } = require(`canvas`);
@@ -71,7 +57,6 @@ const Font_Size_max = 80
 const Font_Size_min = 50
 const Canvas_Larg = 700
 const Canvas_Haut = 250
-
 function makeid(length = String) {
   var result           = '';
   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -129,19 +114,27 @@ Audio(Song)
   var STREAM = await Voice.createAudioResource(stream, { inputType: Voice.StreamType.Arbitrary });
   player.play(STREAM)
   connection.subscribe(player);
+    setInterval(() => {
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
+    setInterval(() => {
+    if(!Songs[0]) {
+      connection.destroy();
+      queue.delete(guild);
+    }
+}, 10000);
+    if(!queue.get(guild))
     if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
     else {
-    if (!Songs[1]) {
-      connection.destroy();
+      await Songs.shift();
+    if (!Songs[0]) {
       queue.delete(guild);
       return;
     } else {
-      await Songs.shift();
     play(guild,channel,adaptater);
     }
     }
-  })
+})
+}, 10000);
   }
 }
 
@@ -222,7 +215,7 @@ async function guild_create(guild) {
         Embed.addField(`Icon`, guild.iconURL({size: 4096}))
         Embed.setImage(guild.iconURL({size: 4096}))
         Embed.addField(`Gérant`, creator.user.toString())
-        Embed.setFooter(`${guild.name}'s ID: ${guild.id}`)
+        Embed.setFooter({"text": `${guild.name}'s ID: ${guild.id}`})
         Embed.setTimestamp()
         DB.send({ embeds: [Embed] })
         })
@@ -371,6 +364,8 @@ async function Message(message){
     const Time = moment(message.createdAt).format('H:mm:ss')
     if(message.channel.id === Ch_Err) return;
     if(message.channel.id === 840923591460651008) return;
+    if(message.channel.id === 969739493223596042) return;
+    if(message.channel.id === 969742402577375272) return;
     if(message.channel.id === Ch_Cmd) return;
     if(message.channel.type == 'GUILD_PUBLIC_THREAD' || message.channel.type == 'GUILD_PRIVATE_THREAD') var Channel_Type = `Fil`
     else var Channel_Type = `Salon`
@@ -387,11 +382,17 @@ async function Message(message){
     }
 
 Client.on(`ready`, async () => {
-  const upgraded = await ncu.run({
-      packageFile: './package.json',
-      upgrade: true,
-    })
-    console.log(upgraded);
+  const express = require('express');
+  const app = express();
+const port = 3000
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
   var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
@@ -518,14 +519,14 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
   if (oldMember.roles.cache.size > newMember.roles.cache.size) {
     const Embed = new Discord.MessageEmbed()
     Embed.setColor(`RED`)
-    Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
+    Embed.setAuthor({"name": newMember.user.tag, "iconURL": newMember.user.avatarURL()})
     
     oldMember.roles.cache.forEach(role => {
         if (!newMember.roles.cache.has(role.id)) {
             Embed.addField(`Role Retiré`, role.name)
             .addField(`Serveur`, newMember.guild.name)
             .setTimestamp()
-            .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+            .setFooter({"text": `${newMember.user.username}'s ID: ${newMember.id}`})
             Client.channels.cache.get(Ch_Role).send({ embeds: [Embed]})
             return;
         }
@@ -533,23 +534,23 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
 } else if (oldMember.roles.cache.size < newMember.roles.cache.size) {
     const Embed = new Discord.MessageEmbed()
     Embed.setColor(`GREEN`)
-    Embed.setAuthor(newMember.user.tag, newMember.user.avatarURL())
+    Embed.setAuthor({"name": newMember.user.tag, "iconURL": newMember.user.avatarURL()})
     
     newMember.roles.cache.forEach(role => {
         if (!oldMember.roles.cache.has(role.id)) {
             Embed.addField(`Role Ajouté`, role.name)
             .addField(`Serveur`, newMember.guild.name)
             .setTimestamp()
-            .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+            .setFooter({"text": `${newMember.user.username}'s ID: ${newMember.id}`})
             Client.channels.cache.get(Ch_Role).send({ embeds: [Embed]})
             return;
         }
     })
 } else if (!oldMember.nickname && newMember.nickname) {
   const membernewnicklog = new Discord.MessageEmbed()
-    .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setAuthor({"name": newMember.user.tag, "iconURL": newMember.user.displayAvatarURL({ format: `png`, dynamic: true })})
     .setDescription(`**${newMember} pseudo ajouté dans : ${oldMember.guild.name}**`)
-    .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+    .setFooter({"text": `${newMember.user.username}'s ID: ${newMember.id}` })
     .setTimestamp()
     .setColor('#ffff00')
     .addField(`Nouveau Pseudo`, newMember.nickname)
@@ -557,9 +558,9 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
   return;
 } else if (oldMember.nickname && !newMember.nickname) {
   const memberremovenicklog = new Discord.MessageEmbed()
-    .setAuthor(`${oldMember.user.tag}`, `${oldMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setAuthor({"name": oldMember.user.tag, "iconURL": oldMember.user.displayAvatarURL({ format: `png`, dynamic: true })})
     .setDescription(`**${oldMember} pseudo retiré dans : ${oldMember.guild.name}**`)
-    .setFooter(`${oldMember.user.username}'s ID: ${oldMember.id}`)
+    .setFooter({"text": `${oldMember.user.username}'s ID: ${oldMember.id}` })
     .setTimestamp()
     .setColor('#f04747')
     .addField(`Ancien Pseudo`, oldMember.nickname)
@@ -568,9 +569,9 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
 } else if (oldMember.nickname && newMember.nickname) {
   if(oldMember.nickname === newMember.nickname) return;
   const memberchangednicklog = new Discord.MessageEmbed()
-    .setAuthor(`${newMember.user.tag}`, `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`)
+    .setAuthor({"name": `${newMember.user.tag}`, "iconURL": `${newMember.user.displayAvatarURL({ format: `png`, dynamic: true })}`})
     .setDescription(`**${newMember} pseudo changé dans : ${oldMember.guild.name}**`)
-    .setFooter(`${newMember.user.username}'s ID: ${newMember.id}`)
+    .setFooter({"text": `${newMember.user.username}'s ID: ${newMember.id}`})
     .setTimestamp()
     .setColor('#ff4500')
     .addField(`Avant`, oldMember.nickname)
@@ -628,9 +629,7 @@ Client.on(`guildMemberRemove`, async member => {
 
 	if (!kickLog) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, très probablement de sa propre volonté.`);
 
-	const { executor, target } = kickLog;
-
-	if (target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${executor.tag}**`);
+	if (kickLog.target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${kickLog.executor.tag}**`);
 	else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, rien n'a été trouvé.`);
 
     var Left = db.get(`guild_${member.guild.id}_Memberleft`)
@@ -685,7 +684,7 @@ Client.on('guildCreate', async (guild) => {
       
   const embed = new Discord.MessageEmbed()
   embed.setColor(`42ff00`)
-  embed.setAuthor(`Créateur : ${CreatorTag} ; ${Client.user.tag}`, Client.users.cache.get(CreatorID).displayAvatarURL({ dynamic: true, size: 4096 }))
+  embed.setAuthor({"name": `Créateur : ${CreatorTag} ; ${Client.user.tag}`, "iconURL": Client.users.cache.get(CreatorID).displayAvatarURL({ dynamic: true, size: 4096 })})
   embed.setTitle(`Xitef156`)
   embed.setURL('https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA')
   embed.setDescription(`Regardez mes vidéos [Youtube](https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA)`)
@@ -693,7 +692,7 @@ Client.on('guildCreate', async (guild) => {
   embed.setURL('https://teespring.com/fr/vetements-xitef-rouge')
   embed.addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
   embed.setTimestamp()
-  embed.setFooter(`Team Dragon`, Client.user.displayAvatarURL())
+  embed.setFooter({"text": `Team Dragon`, "iconURL": Client.user.displayAvatarURL()})
   guild.systemChannel.send({ content: `Coucou !`, embeds: [embed]});
   
 });
@@ -712,21 +711,21 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
   Embed_2.addField(`Icon`, newGuild.iconURL({size: 4096}))
   Embed_2.setImage(newGuild.iconURL({size: 4096}))
   Embed_2.addField(`Gérant`, creator2.toString())
-  Embed_2.setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
+  Embed_2.setFooter({"text": `${newGuild.name}'s ID: ${newGuild.id}`})
   Embed_2.setTimestamp()
 
   Embed.setColor(`#42ff00`)
   if(oldGuild.name !== newGuild.name){
   Embed.addField(`Nouveau Nom`, newGuild.name)
   .addField(`Ancien Nom`, oldGuild.name)
-  .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
+  .setFooter({"text": `${newGuild.name}'s ID: ${newGuild.id}`})
   Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
   } else if(oldGuild.icon !== newGuild.icon){
     Embed.addField(`Nouvelle Icon`, newGuild.iconURL({size: 4096}))
     .setImage(newGuild.iconURL({size: 4096}))
     .addField(`Ancienne Icon`, oldGuild.iconURL({size: 4096}))
     .setImage(oldGuild.iconURL({size: 4096}))
-    .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
+    .setFooter({"text": `${newGuild.name}'s ID: ${newGuild.id}`})
     Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
     }
   
@@ -735,7 +734,7 @@ Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
       newGuild.fetch(newGuild.ownerId)
       Embed.addField(`Nouveau gérant`, creator2.toString())
       .addField(`Ancien gérant`, creator.toString())
-      .setFooter(`${newGuild.name}'s ID: ${newGuild.id}`)
+      .setFooter({"text": `${newGuild.name}'s ID: ${newGuild.id}`})
       Client.channels.cache.get(Ch_Logs).send({ embeds: [Embed]})
       }
     Client.channels.cache.get(Ch_Infos).send({ embeds: [Embed_2] })
@@ -769,13 +768,19 @@ Client.on(`messageDelete`, async (message) => {
 });
 
 Client.on(`messageUpdate`, async (oldMessage, newMessage) => {
+    if(oldMessage.channel.id === 969739493223596042) return;
+    if(oldMessage.channel.id === 969742402577375272) return;
+    if(newMessage.channel.id === 969739493223596042) return;
+    if(newMessage.channel.id === 969742402577375272) return;
   var OldMessage = oldMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   var NewMessage = newMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   if(OldMessage === NewMessage) return;
   const Ch_Msg_2 = db.get(`guild_${oldMessage.guild.id}_Message-2`)
   if(oldMessage.member.id === CreatorID) var User = CreatorTag
   else var User = `${oldMessage.member.user.toString()} (**${oldMessage.author.tag}**)`
-  Client.channels.cache.get(Ch_Msg_2).send(`**${moment().format('H:mm:ss')}** Message modifié de ${User} -> ${OldMessage} en ${NewMessage}`);
+  var txt = `**${moment().format('H:mm:ss')}** Message modifié de ${User} -> ${OldMessage} en ${NewMessage}`
+  if(txt.length < 2000) Client.channels.cache.get(Ch_Msg_2).send(txt)
+  else return;
 });
 
 Client.on(`roleCreate`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role`)).send(`**${moment(role.createdAt).format('H:mm:ss')}** ${role.toString()} (**${role.name}**) a été créer`));
@@ -904,7 +909,7 @@ if(message.content.startsWith(Prefix + `set`)){
     if(message.content == Prefix + `help`){
       const Embed = new Discord.MessageEmbed()
       Embed.setColor(Bot_Color)
-      Embed.setAuthor(`Créateur : ${CreatorTag}`, Client.users.cache.get(CreatorID).avatarURL({ dynamic: true, size: 4096}))
+      Embed.setAuthor({"name": `Créateur : ${CreatorTag}`, "iconURL": Client.users.cache.get(CreatorID).avatarURL({ dynamic: true, size: 4096})})
       Embed.setTitle(`Les commandes du bot (certaines peuvent être activés en message privé_)`)
       Embed.addField(`${Prefix}prefix`, `Change le prefix du bot pour le serveur`, true)
       Embed.addField(`${Prefix}stat`, `Statistiques du joueur`, true)
@@ -934,7 +939,7 @@ if(message.content.startsWith(Prefix + `set`)){
     if(message.content == Prefix + `pres`){
       const embed = new Discord.MessageEmbed()
       .setColor(`42ff00`)
-      .setAuthor(`Créateur : ${CreatorTag} ; ${Client.user.tag}`, `https://i.ibb.co/TwgW11w/Logo-Xitef156-2-5.png`)
+      .setAuthor({"name": `Créateur : ${CreatorTag} ; ${Client.user.tag}`, "iconURL": `https://i.ibb.co/TwgW11w/Logo-Xitef156-2-5.png`})
       .setTitle(`Xitef156`)
       .setURL('https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA')
       .setDescription(`Regardez mes vidéos [Youtube](https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA)`)
@@ -942,166 +947,9 @@ if(message.content.startsWith(Prefix + `set`)){
       .setURL('https://teespring.com/fr/vetements-xitef-rouge')
       .addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
       .setTimestamp()
-      .setFooter(`Team Dragon`, Client.user.displayAvatarURL())
+      .setFooter({"text": `Team Dragon`, "iconURL": Client.user.displayAvatarURL()})
       message.channel.send({ embeds: [embed]})
   }
-
-  if(message.content.startsWith(Prefix + `download`)){
-	  return message.channel.send(`Commande désactiver ; contacter Xitef156#1822 pour plus d'infos ou pour télécharger votre musique/vidéo`)
-    if(!args[0]) return message.channel.send(`Envoie un lien (youtube ou soundcloud) pour que je puisse télécharger ta vidéo/musique 
-    (si tu met des mots clés je rechercherai sur youtube et si tu marque mp3, je t'enverrai un fichier mp3`)
-    if (!fs.existsSync(`./Download/MP3`)) fs.mkdirSync(`./Download/MP3`);
-    if (!fs.existsSync(`./Download/MP4`)) fs.mkdirSync(`./Download/MP4`);
-    if (!fs.existsSync(`./Download/Others/MP3`)) fs.mkdirSync(`./Download/Others/MP3`);
-    if (!fs.existsSync(`./Download/Others/MP4`)) fs.mkdirSync(`./Download/Others/MP4`);
-    message.channel.send(`Recherche en cours...`)
-    if(AuthifCreator) var Location = `/`
-    else var Location = `/Others/`
-    var Code = makeid(10)
-    var Title = remSpCh(`${message.author.tag} - ${Code}`)
-    if(message.content.includes(`soundcloud.com`) || message.content.includes(`sc`)) {
-      var search = args.join(` `)
-        await songFinder(search).then(async song => {
-            message.channel.send(`Téléchargement de **${song.title || 'fail'}.mp3** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-            if(message.author.id == CreatorID) var Title = await remSpCh(song.title)
-            var File = `./Download${Location}MP3/${Title}.mp3`
-            const url = song.thumbnail
-        const options = {
-          url: url,
-          dest: `./Download/${song.id}.png`                // will be saved to /path/to/dest/image.jpg
-        }
-        Download.image(options)
-              const stream = await song.downloadProgressive();
-              setTimeout(async () => {
-              const writer = stream.pipe(fs.createWriteStream(File));
-              writer.on("finish", () => {
-        db.set(`Title1_${Code}`, song.title)
-        db.set(`Author_${Code}`, song.author.name)
-        db.set(`Format`, 3)
-        db.set(`Image_${Code}`, `./Download/${song.id}.png`)
-        db.set(`Title2_${Code}`, Title)
-        db.set(`Location`, `./Download${Location}work${Code}.mp3`)
-        db.set(`Code_Image_${Code}`, `./Download/${song.id}.png`)
-        db.set(`Format`, 3)
-        ChangeFile()
-              })
-            })
-          }, 5000)
-} else {
-      var format = `4`
-    if(message.content.includes(`mp3`) || message.content.includes(`Mp3`) || message.content.includes(`MP3`)){
-      var format = `3`
-      var filter = `audio`
-      var vid = args.join(` `).replace(`mp3`, ``)
-      } else {
-      var format = `4`
-      var filter = `video`
-      var vid = args.join(` `)
-    }
-    db.set(`Format`, format)
-    const video = await videoFinder(vid)
-    if(message.author.id == CreatorID) var Title = remSpCh(video.title)
-    const stream = ytdl(video.url, {
-      filter: `${filter}only`,
-      quality: 'highest'
-    })
-    var File = `./Download${Location}MP${format}/${Title}.mp${format}`
-    if(format == `3`){
-  const options = {
-    url: video.image,
-    dest: `./Download/${video.videoId}.png`                // will be saved to /path/to/dest/image.jpg
-  }
-  Download.image(options)
-  console.log(`Image Download`)
-  db.set(`Title_${Code}`, video.title)
-  db.set(`Author_${Code}`, video.author.name)
-  db.set(`Image_${Code}`, `./Download/${video.videoId}.png`)
-  db.set(`Location`, `./Download${Location}work${Code}.mp${format}`)
-}
-      db.set(`Title2_${Code}`, Title)
-              db.set(`Title_${video.videoId}`, video.title)
-              db.set(`Duration_${video.videoId}`, video.timestamp)
-    message.channel.send(`Téléchargement de **${video.title}.mp${format}** de **${video.author.name}** (Cette étape peut prendre plusieurs minutes alors soyer patient)`)
-    const download = stream.pipe(fs.createWriteStream(File))
-    download.on('finish', async () => {
-      console.log(`Fichier téléchargé`)
-      if(format == `4`) {
-        ytdl(video.url, {
-          filter: 'audioonly',
-          quality: 'highest'
-        })
-        .pipe(fs.createWriteStream(`./Download${Location}MP4/${Code}_2.mp3`))
-        .on('finish', async () => {
-              ffmpeg(File)
-              .addInput(`./Download${Location}MP4/${Code}_2.mp3`)
-              .output(`./Download${Location}work_${Code}.mp4`)
-              .on('end', async () => {
-                await fs.renameSync(`./Download${Location}work_${Code}.mp4`, File);
-                fs.unlinkSync(`./Download${Location}MP4/${Code}_2.mp3`);
-                SendFile();
-              })
-              .on('progress', async function(progress) {
-                await sleep(2)
-                if(pourc !== Math.round(progress.percent * 1) / 1){
-                console.log(`Downloading... (${Math.round(progress.percent * 1) / 1}%)`)
-                var pourc = Math.round(progress.percent * 1) / 1
-                }
-              })
-              .run()
-            })
-      } else ChangeFile()
-      })
-  await sleep(2);
-    if(getFilesizeInBytes(File) === 0) message.channel.send(`Cette vidéo ne peut pas se télécharger`);
-}
-    function ChangeFile() {
-      message.channel.send(`50%...`)
-      var format = db.get(`Format`)
-      var LOCATION = db.get(`Location`)
-      var TITLE = db.get(`Title2_${Code}`)
-      var AUTHOR = db.get(`Author_${Code}`)
-      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
-      var IMAGE = db.get(`Image_${Code}`)
-      ffmpeg(File)
-      .outputOptions('-metadata', 'title=' + TITLE)
-      .outputOptions('-metadata', 'artist=' + AUTHOR)
-      .output(LOCATION)
-      .on('end', () => {
-        const Tag = { image: IMAGE }
-        NodeID3.update(Tag, LOCATION)
-        function check2() {
-          setTimeout(async () => {
-          var tag = NodeID3.read(LOCATION)
-          if(!tag.image) check2();
-          else {
-            await fs.unlinkSync(File)
-            fs.renameSync(LOCATION, File)
-            fs.unlinkSync(IMAGE)
-            SendFile()
-          }
-          }, 5000)
-        }
-        check2();
-  })
-  .on('process', async process => console.log(Math.round(process.percent * 1) / 1))
-      .run()
-    }
-    async function SendFile() {
-      var format = db.get(`Format`)
-      var TITLE = db.get(`Title2_${Code}`)
-      var File = `./Download${Location}MP${format}/${TITLE}.mp${format}`
-      var File_Size = await getFilesizeInBytes(File)
-      if(File_Size < (8 * 1000 * 1000)) {
-        const attachment = new Discord.MessageAttachment(File, `${TITLE}.mp${format}`);
-        message.channel.send({content: `**${TITLE}** a été téléchargé avec succès`, files: [attachment]});
-      }
-      else {
-        if(message.author.id == CreatorID) message.channel.send(`**${Title}** a été téléchargé avec succès (Download/MP${format}/${Title}.mp${format})`);
-        else message.channel.send(`**${Title}** a été téléchargé avec succès mais le fichier est trop lourd (**${Math.round(File_Size * 1) / 1}**Mo), veuillez envoyé ce code : **${Code}** à **${CreatorTag}**)`)
-      }
-    }
-  }
-
 if(AuthifCreator){
 
 if(message.content.startsWith(Prefix + `get_msg`)){
@@ -1122,7 +970,7 @@ if(message.content.startsWith(Prefix + `get_msg`)){
   if(message.content === Prefix + `ptdr`){
     const id = `ajOMDKvISDc`
     const Embed = new Discord.MessageEmbed()
-    .setAuthor(`Nouvelle vidéo`)
+    .setAuthor({"name": `Nouvelle vidéo`})
     .setImage(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
     .setTitle(`Geometry Dash Meltdown 100%`)
     .setURL(`https://www.youtube.com/watch?v=${id}`)
@@ -1550,7 +1398,7 @@ if(!Songs) return message.channel.send(`Il y a rien a voir`)
 const Queue = new Discord.MessageEmbed()
 .setColor(`#00ffff`)
 .setTitle(`Queue de ${message.guild.name}`)
-await Songs.forEach((song, index) => Queue.addField(`${index}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
+await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
 await message.channel.send({ embeds: [Queue]})
 }
 
