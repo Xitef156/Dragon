@@ -16,7 +16,8 @@
     "tweetnacl": "^1.0.3",
     "weather-js": "^2.0.0",
     "yt-search": "^2.10.3",
-    "ytdl-core": "^4.11.0"
+    "ytdl-core": "^4.11.0",
+    "ffmpeg": "^0.0.4"
   },
   "scripts": {
     "start": "node index.js",
