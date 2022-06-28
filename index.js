@@ -1,69 +1,56 @@
-const Discord = require('discord.js');const Voice = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
+const Discord = require('discord.js');const Voice = require('@discordjs/voice');const {SlashCommandBuilder} = require('@discordjs/builders');
+require('sodium');require('opusscript');require('libsodium-wrappers');require('tweetnacl');
 const ytSearch = require('yt-search');
 const weather = require('weather-js');
-const db = require('quick.db');require('better-sqlite3');
+const Quick = require('quick.db');
+require('better-sqlite3');
+const db = new Quick.QuickDB();
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
+const ytdl = require('ytdl-core');
+const express = require('express')
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
 const Client = new Discord.Client({ intents: [
   Instent.GUILDS,
-  Instent.GUILD_MESSAGES,
+  Instent.GUILD_INTEGRATIONS,
   Instent.GUILD_MESSAGE_REACTIONS,
   Instent.GUILD_MESSAGE_TYPING,
   Instent.DIRECT_MESSAGES,
-  Instent.DIRECT_MESSAGE_REACTIONS,
   Instent.DIRECT_MESSAGE_TYPING,
+  Instent.DIRECT_MESSAGE_REACTIONS,
   Instent.GUILD_MEMBERS,
   Instent.GUILD_VOICE_STATES,
   Instent.GUILD_BANS,
   Instent.GUILD_EMOJIS_AND_STICKERS,
   Instent.GUILD_INVITES,
   Instent.GUILD_INTEGRATIONS,
-  Instent.GUILD_WEBHOOKS
+  Instent.GUILD_WEBHOOKS,
+  Instent.GUILD_SCHEDULED_EVENTS,
+  Instent.GUILD_PRESENCES
 ],
 makeCache: Discord.Options.cacheWithLimits({
-  MessageManager: 200, // This is default
+  interactionManager: 200,
   PresenceManager: 1,
-  // Add more class names here
 }), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
 });
+
 const queue = new Map();
 const React = new Map();
 const player = Voice.createAudioPlayer();
 
 const Bot_Color = `#42ff00`
-const CreatorTag = `Xitef156#1822`
-const CreatorID = '776140752752869398'
-const AuthifCreator = `message.author.id === ${CreatorID}`
-const AuthifNotCreator = `message.author.id !== ${CreatorID}`
-const Hack_Guild_ID = '880444663914459166'
-const Bot_Guild_ID = '850033010350096414'
 const Ch_Err = '834751451090911292'
-const Ch_Cmd = '777937994245996545'
-const Bot_link = `https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`
-const Font = 'Vermin Vibes'
-const { registerFont } = require(`canvas`);
-registerFont(`./${Font}.ttf`, {family: Font})
 moment.locale('fr');
 
-async function play(guild,channel,adaptater){
-  var connection = Voice.getVoiceConnection(guild)
-  var Songs = queue.get(guild)
-  var Song = Songs[0];
-  if(!connection) {
-      var connection = Voice.joinVoiceChannel({
-    channelId: channel,
-    guildId: guild,
-    adapterCreator: adaptater
-}).removeAllListeners()
-  }
+async function play(channel, guild){
+  var Songs = await queue.get(guild.id)
+  var Song = await Songs[0];
   if (!Song) {
     connection.destroy();
-    queue.delete(guild.id);
+    queue.delete(guild);
     return;
   }
   async function Audio(song){
@@ -73,36 +60,24 @@ async function play(guild,channel,adaptater){
   })
 }
   else {
-    var Stream = await ytdl(`${song.url}`, { filter : 'audioonly'})
-    Play(Stream);
+    var Stream = await ytdl(song.url,{filter : 'audioonly', quality: 'highest', highWaterMark: 1<<25})
+    await Play(Stream)
   }
 }
 Audio(Song)
   async function Play(stream){
-  var STREAM = await Voice.createAudioResource(stream, { inputType: Voice.StreamType.Arbitrary });
-  player.play(STREAM)
-  connection.subscribe(player);
-    setInterval(() => {
+    var connection = await Voice.getVoiceConnection(guild.id)
+  var STREAM = await Voice.createAudioResource(stream)
+  await connection.subscribe(player);
+  await player.play(STREAM)
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    setInterval(() => {
+    if(db.get(`guild_${channel.guild}_Music_Looping`) == true) return play(channel.guild);
+    await Songs.shift();
     if(!Songs[0]) {
       connection.destroy();
-      queue.delete(guild);
-    }
-}, 10000);
-    if(!queue.get(guild))
-    if(db.get(`guild_${guild}_Music_Looping`) == true) play(guild);
-    else {
-      await Songs.shift();
-    if (!Songs[0]) {
-      queue.delete(guild);
-      return;
-    } else {
-    play(guild,channel,adaptater);
-    }
-    }
-})
-}, 10000);
+      queue.delete(channel.guild);
+    } else play(channel);
+    })
   }
 }
 
@@ -145,132 +120,202 @@ const videoFinder = async (search) => {
   }
 }
 
-async function guild_create(guild) {
-    
-  if(guild.id === (Bot_Guild_ID || Hack_Guild_ID)) return;
-  const Guild = Client.guilds.cache.get(Bot_Guild_ID)
-  if(!Client.channels.cache.find(cat => cat.type == 'GUILD_CATEGORY' && cat.id === db.get(`guild_${guild.id}_Category`)))
-  await Guild.channels.create(guild.name, {
-    type: 'GUILD_CATEGORY',
-    permissionOverwrites: [{id: Guild.id,deny: ['VIEW_CHANNEL']}]
-  }).then(async Category => {
-  db.set(`guild_${guild.id}_Category`, Category.id)
-  function text_create(name){
-    Guild.channels.create(name, {
-      type: 'GUILD_TEXT',
-      parent: Category
-      }).then(DB => {
-        db.set(`guild_${guild.id}_${name}`, DB.id)
-      })
-  }
-  await text_create('Message-1')
-  await text_create('Message-2')
-  await text_create('Voice')
-  await text_create('Logs')
-  await text_create('Role')
-  await text_create('Channel')
-  await text_create('Nickname')
-  await text_create('Clear')
-  await text_create('Invite')
-  await Guild.channels.create('Infos', {
-      type: 'GUILD_TEXT',
-      parent: Category
-      }).then(DB => {
-        guild.members.fetch(guild.ownerId).then(creator => {
-        const Embed = new Discord.MessageEmbed()
-        Embed.setColor(Bot_Color)
-        Embed.addField(`Nom`, guild.name)
-        Embed.addField(`Icon`, guild.iconURL({size: 4096}))
-        Embed.setImage(guild.iconURL({size: 4096}))
-        Embed.addField(`Gérant`, creator.user.toString())
-        Embed.setFooter({"text": `${guild.name}'s ID: ${guild.id}`})
-        Embed.setTimestamp()
-        DB.send({ embeds: [Embed] })
-        })
-        db.set(`guild_${guild.id}_Infos`, DB.id)
-      })
-
-  await Guild.channels.create('MemberCount', {
-    type: 'GUILD_VOICE',
-    parent: Category
-    }).then(DB => {
-      db.set(`guild_${guild.id}_MemberCount`, DB.id)
-    })
-  })
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
-async function Msg(message) {
-  var msg1 = message.content.replace("<@!688327045129699400>", "@-Charlotte")
-  var Msg1 = msg1.replace("<@!776140752752869398>", "@-Xitef156")
-  var msg2 = Msg1.replace("<@688327045129699400>", "@-Charlotte")
-  var Msg2 = msg2.replace("<@776140752752869398>", "@-Xitef156")
-    var Message = Msg2.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
-  if (message.attachments.size > 0) {
-    var Attachment_1 = message.attachments
-    var Attachment_2 = `comme fichier : [ ${Attachment_1.map(att => `${att.name} : ${att.size / 1000}Ko ${att.url}`).join(` ; `)} ]`
-} else var Attachment_2 = ``
-if (message.embeds.length > 0) {
-  const Embeds = new Map();
-  const Embed = {
-    embeds: []
-  }
-  Embeds.set(Client.user.id, Embed);
-  const map = Embeds.get(Client.user.id)
-  var Embeds_1 = message.embeds
-  Embeds_1.forEach(embed => {
-  if(embed.title) var Title = `\nTitre : ${embed.title}`
-  if(embed.author) var Aut = `\nAuteur : ${embed.author.name}`
-  if(embed.hexColor) var Color = `\nCouleur : ${embed.hexColor}`
-  if(embed.description) var Desc = "\nDescription : ```" + embed.description + "```"
-  if(embed.fields.length > 1) var Fields = `\nFields : [ ${embed.fields.map(field => `Nom : ${field.name}, Valeur : ${field.value}, Inline : ${field.inline}`)} ]`
-  if(embed.timestamp) var Time = `\nHeure : ${moment(embed.timestamp).format(`Do:MM:YYYY H:mm:ss`)}`
-  if(embed.footer !== null) var Foot = `\nFooter : ${embed.footer}`
-  if(embed.image) var Img = `\nImage : ${embed.image.url}`
-  if(embed.thumbnail !== null) var Minia = `\nMiniature : ${embed.thumbnail}`
-  if(embed.video) var Vid = `\nVideo : ${embed.video}`
-  Embed.embeds.push(`${Title || ``}${Aut || ``}${Color || ``}${Desc || ``}${Fields || ``}${Time || ``}${Foot || ``}${Img || ``}${Minia || ``}${Vid || ``}`)
-})
-  var Embeds_3 = `comme embeds : [ ${map.embeds.join(`\n ------------------------------------------------ \n`)} ]`
-} else var Embeds_3 = ``
-if(message.content === ``) var Message = ``
-if(Message && Embeds_3) var and1 = ` et `
-if(Message && Attachment_2) var and1 = ` et `
-if(Embeds_3 && Attachment_2) var and2 = ` et `
-const Txt = `${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Embeds_3 || ``}`
-return Txt;
+async function Unban(member,guild,ms,user,now){
+  var G = Client.guilds.cache.get(guild)
+  await sleep(ms)
+  await G.bans.remove(member)
+  Client.users.cache.get(user).send(`<@${member.user.id}> que vous avez banni sur ${G.name} le ${now} a été débanni`)
+
 }
 
-async function Message(message){
-  const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
+const Set = new SlashCommandBuilder()
+	.setName('set')
+	.setDescription('Configure le bot')
+	.addStringOption(option =>
+		option.setName('type')
+			.setDescription("Etat du channel d'arrivé ou de départ des membres")
+      .addChoices({name:'Arrivé',value:'Add'},{name:'Départ',value:'Remove'}))
+      .addChannelOption(chan => chan
+        .setName('salon')
+        .setDescription('Salon pour les interactions'))
+        .addStringOption(etat => etat
+          .setName('etat')
+          .setDescription("Activé/Désactivé l'option"))
 
-  if(message.author.id == CreatorID) {
-    var User = message.author.tag
-  }
-  else {
-    var User = `${message.author.toString()} (**${message.author.tag}**)`
-  }
-    const Ch_Msg_1 = db.get(`guild_${message.guild.id}_Message-1`)
-    if(message.content === `!xptdr`) return;
-    if(message.author.id === Client.user.id && message.content.startsWith(`**`)) return;
-    const Time = moment(message.createdAt).format('H:mm:ss')
-    if(message.channel.id === Ch_Err) return;
-    if(message.channel.id === 840923591460651008) return;
-    if(message.channel.id === 969739493223596042) return;
-    if(message.channel.id === 969742402577375272) return;
-    if(message.channel.id === Ch_Cmd) return;
-    if(message.channel.type == 'GUILD_PUBLIC_THREAD' || message.channel.type == 'GUILD_PRIVATE_THREAD') var Channel_Type = `Fil`
-    else var Channel_Type = `Salon`
-    if(message.channel.type == 'DM') var Channel = await 847579263988531210
-    if(message.guild.id === 787081936719708221) var Channel = await 871919663670517780
-    if(!Channel && Ch_Msg_1 !== 868950307848200202) var Channel = await Ch_Msg_1
-    if(message.guild.id === Bot_Guild_ID && !message.content.startsWith(Prefix)) return;
-    await Msg(message, function (err) {
-      if(err) return console.log(`Erreur Message : ${err}`)
-    }).then(Txt => {
-      if(message.content.startsWith(Prefix)) Client.channels.cache.get(Ch_Cmd).send(`**${Time}** ${User} a utilisé la commande **${message.content.substr(0,message.content.indexOf(' ')).replace(Prefix, '')}**${message.content.replace(message.content.substr(0,message.content.indexOf(' ')), '')}`)
-      Client.channels.cache.get(Channel).send(`**${Time}** ${Channel_Type} : ${message.channel.toString()} (**${message.channel.name}**) : ${User} envoie ${Txt}`)
-    })
-    }
+const Weather = new SlashCommandBuilder()
+.setName('weather')
+.setDescription("Indique la météo d'une ville")
+.addStringOption(city => city
+  .setName('ville')
+  .setDescription('Marque le nom de ta ville')
+  .setRequired(true))
+  .addStringOption(country =>(country
+    .setName('pays')
+    .setDescription('Indique la pays de ta ville')
+    .setRequired(true)
+  ))
+
+const Maths = new SlashCommandBuilder()
+.setName('maths')
+.setDescription('Fais des maths')
+.addNumberOption(num1 => num1
+  .setName('num1')
+  .setDescription('Choisis un premier nombre')
+  .setRequired(true))
+  .addStringOption(symbol => symbol
+    .setName('signe')
+    .setDescription("Choisis le signe de l'opération")
+    .setRequired(true)
+    .addChoices({name:'+ (Addition)',value:'+'},{name:'- (Soustraction)',value:'-'},{name:'* (Multiplication)',value:'*'},{name:'/ (division)',value:'/'},{name:'mod (modulo)',value:'mod'},{name:'pow (puissance)',value:'pow'},{name:'root (Racine)',value:'root'}))
+    .addNumberOption(num2 => num2
+      .setName('num2')
+      .setDescription('Choisis le deuxième numbre')
+      .setRequired(true))
+
+const Link = new SlashCommandBuilder()
+.setName('link')
+.setDescription('Vous envoie le lien du bot')
+
+const Role = new SlashCommandBuilder()
+.setName('role')
+.setDescription('Ajoute un rôle par Embed')
+.addStringOption(role => role
+  .setName('desc')
+  .setDescription("Description des rôles (description_role1 ; description_role2 ; description_role3 ; ...)")
+  .setRequired(true))
+  .addStringOption(id => id
+    .setName('ids')
+    .setDescription('Mets les ids (id_role1 ; id_role2 ; is_role3 ; ...)')
+    .setRequired(true))
+    .addStringOption(emoji => emoji
+      .setName('emoji')
+      .setDescription('Emoji de réaction (emoji_role_1 ; emoji_role_2 ; emoji_role_3 ; ...)')
+      .setRequired(true))
+      .addStringOption(title => title
+        .setName('titre')
+        .setDescription('Met un titre'))
+        .addStringOption(desc => desc
+          .setName('description')
+          .setDescription('Ajoute une description'))
+          .addStringOption(thumb => thumb
+            .setName('miniature')
+            .setDescription("Met un lien d'une image"))
+
+const List = new SlashCommandBuilder()
+.setName('list')
+.setDescription('Donne la liste')
+.addStringOption(list => list
+  .setName('type')
+  .setDescription('Choisis le type de liste')
+  .setRequired(true)
+  .addChoices({name:'Role',value:'role'},{name:'Membre',value:'member'}))
+
+const Say = new SlashCommandBuilder()
+.setName('say')
+.setDescription('Fait parler le bot')
+.addStringOption(msg => msg
+  .setName('msg')
+  .setDescription('interaction à dire')
+  .setRequired(true))
+  .addChannelOption(channel => channel
+    .setName('salon')
+    .setDescription("Indique sur quel salon je l'envoie (si vide je l'envoie içi)"))
+
+const TempBan = new SlashCommandBuilder()
+.setName('tempban')
+.setDescription('Ban temporairement un membre')
+.setDefaultPermission(false)
+.addUserOption( user => user
+  .setName('membre')
+  .setDescription('Les membre a bannir')
+  .setRequired(true))
+  .addNumberOption(minute => minute
+    .setName('minute')
+    .setDescription('Nombres de minutes avant le bannisement')
+    .setRequired(true))
+    .addNumberOption(hour => hour
+      .setName('heure')
+      .setDescription("Nombres d'heures' avant le bannisement"))
+      .addNumberOption(days => days
+        .setName('jour')
+        .setDescription('Nombres de jours avant le bannisement'))
+        .addStringOption(reason => reason
+          .setName('raison')
+          .setDescription('Raison du bannisement'))
+        
+const Clear = new SlashCommandBuilder()
+.setName('clear')
+.setDescription('Nettoie le salon de interactions')
+.addNumberOption(num => num
+  .setName('nombre')
+  .setDescription('Nombre de interactions à détruire')
+  .setRequired(true))
+
+const Join = new SlashCommandBuilder()
+.setName('join')
+.setDescription('Je rejoin ton salon vocal si possible')
+
+const Leave = new SlashCommandBuilder()
+.setName('leave')
+.setDescription('Quitte le salon vocal si possible')
+
+const Skip = new SlashCommandBuilder()
+.setName('skip')
+.setDescription('Saute la musique en cours si possible')
+
+const Queue = new SlashCommandBuilder()
+.setName('queue')
+.setDescription("Montre la file d'attente de musique en cours si possible")
+
+const Loop = new SlashCommandBuilder()
+.setName('loop')
+.setDescription('Active/Désactive la boucle de musique')
+.addBooleanOption(on => on
+  .setName('etat')
+  .setDescription("Choisis l'état de la boucle"))
+
+const Volume = new SlashCommandBuilder()
+.setName('volume')
+.setDescription('Modifie le volume de bot')
+.addNumberOption(vol => vol
+  .setName('nombre')
+  .setDescription('nombre du volume'))
+
+const Search = new SlashCommandBuilder()
+.setName('search')
+.setDescription('Recherche des vidéos/musique sur Youtube ou Soundcloud')
+.addStringOption(s => s
+  .setName('recherche')
+  .setDescription('Mot-clés pour la recherche')
+  .setRequired(true))
+  .addStringOption(type => type
+    .setName('type')
+    .setDescription('Choisis la plateforme')
+    .setRequired(true)
+    .addChoices({name:'Youtube',value:'Youtube'},{name:'SoundCloud',value:'SoundCloud'}))
+    .addNumberOption(nmb => nmb
+      .setName('nombre')
+      .setDescription("Nombre d'éléments de la recherche")
+      .setRequired(true))
+
+const Play = new SlashCommandBuilder()
+.setName('play')
+.setDescription('Joue de la musique en vocal')
+.addStringOption(type => type
+  .setName('type')
+  .setDescription('Type de plateforme')
+  .addChoices({name: 'Youtube', value:'Youtube'},{name:'SoundCloud',value:'SoundCloud'})
+  .setRequired(true))
+  .addStringOption(query => query
+    .setName('recherche')
+    .setDescription('Mot-clés de la recherche')
+    .setRequired(true))
 
 Client.on(`ready`, async () => {
   const express = require('express');
@@ -285,302 +330,129 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
   var dir = './Guilds_Bot';
+  var Perm = Discord.Permissions.FLAGS
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
+  try {
+    await Client.application.commands.create(Set)
+    await Client.application.commands.create(Weather)
+    await Client.application.commands.create(Maths)
+    await Client.application.commands.create(Link)
+    await Client.application.commands.create(Role)
+    await Client.application.commands.create(List)
+    await Client.application.commands.create(Say)
+    await Client.application.commands.create(TempBan)
+    await Client.application.commands.create(Clear)
+    await Client.application.commands.create(Join)
+    await Client.application.commands.create(Leave)
+    await Client.application.commands.create(Skip)
+    await Client.application.commands.create(Queue)
+    await Client.application.commands.create(Loop)
+    await Client.application.commands.create(Volume)
+    await Client.application.commands.create(Search)
+    await Client.application.commands.create(Play)
+    console.log('Commandes installés')
+  }catch(e) {
+    console.log('Erreur')
+    console.log(e)
+  }
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
-  Client.user.setActivity(`${date}`)
+  Client.user.setActivity(`v2.0 ${date}`)
 }, 30000);
-    await Client.guilds.cache.forEach(async guild => {
-      if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
-      var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
-        if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
-        if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
-        if(count == 3 && !db.get(`guild_${guild.id}_Voice`)) db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
-        if(count == 4 && !db.get(`guild_${guild.id}_Logs`)) db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
-        if(count == 5 && !db.get(`guild_${guild.id}_Role`)) db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
-        if(count == 6 && !db.get(`guild_${guild.id}_Channel`)) db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
-        if(count == 7 && !db.get(`guild_${guild.id}_Nickname`)) db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
-        if(count == 8 && !db.get(`guild_${guild.id}_Clear`)) db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
-        if(count == 9 && !db.get(`guild_${guild.id}_Infos`)) db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
-        if(count == 10 && !db.get(`guild_${guild.id}_MemberCount`)) db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
-        if(count == 11 && !db.get(`guild_${guild.id}_MemberAdd`)) db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
-        if(count == 12 && !db.get(`guild_${guild.id}_Memberwelcome`)) db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
-        if(count == 13 && !db.get(`guild_${guild.id}_MemberRemove`)) db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
-        if(count == 14 && !db.get(`guild_${guild.id}_Memberleft`)) db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
-        if(count == 15 && !db.get(`guild_${guild.id}_prefix`) && obj.Prefix !== null) db.set(`guild_${guild.id}_prefix`, obj.Prefix)
-      })
-      guild.fetchOwner().then(creator => {
-      let Guild = { 
-      Name: `${guild.name}`,
-      MemberCount: `${guild.memberCount}`, 
-      ID: `${guild.id}`,
-      Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
-      Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerId}`,
-      Prefix: db.get(`guild_${guild.id}_prefix`),
-      Category: db.get(`guild_${guild.id}_Category`),
-      Channels: {
-        Message1: db.get(`guild_${guild.id}_Message-1`),
-        Message2: db.get(`guild_${guild.id}_Message-2`),
-        Voice: db.get(`guild_${guild.id}_Voice`),
-        Logs: db.get(`guild_${guild.id}_Logs`),
-        Role: db.get(`guild_${guild.id}_Role`),
-        Channel: db.get(`guild_${guild.id}_Channel`),
-        Nickname: db.get(`guild_${guild.id}_Nickname`),
-        Clear: db.get(`guild_${guild.id}_Clear`),
-        Infos: db.get(`guild_${guild.id}_Infos`),
-        MemberCount: db.get(`guild_${guild.id}_MemberCount`),
-      },
-      Custom: {
-        Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd`),
-        Welcome: db.get(`guild_${guild.id}_Memberwelcome`),
-        Left_Ch: db.get(`guild_${guild.id}_MemberRemove`),
-        Left: db.get(`guild_${guild.id}_Memberleft`),
-      }
-      }
-      let data = JSON.stringify(Guild, null, 2)
-      fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
+await Client.guilds.cache.forEach(async guild => {
+  var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(async (count) => {
+    if(count == 1 && !db.get(`guild_${guild.id}_Message-1`))await db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
+    if(count == 2 && !db.get(`guild_${guild.id}_Message-2`))await db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
+    if(count == 3 && !db.get(`guild_${guild.id}_Voice`))await db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
+    if(count == 4 && !db.get(`guild_${guild.id}_Logs`))await db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
+    if(count == 5 && !db.get(`guild_${guild.id}_Role`))await db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
+    if(count == 6 && !db.get(`guild_${guild.id}_Channel`))await db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
+    if(count == 7 && !db.get(`guild_${guild.id}_Nickname`))await db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
+    if(count == 8 && !db.get(`guild_${guild.id}_Clear`))await db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
+    if(count == 9 && !db.get(`guild_${guild.id}_Infos`))await db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
+    if(count == 10 && !db.get(`guild_${guild.id}_MemberCount`))await db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
+    if(count == 11 && !db.get(`guild_${guild.id}_MemberAdd`))await db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
+    if(count == 12 && !db.get(`guild_${guild.id}_Memberwelcome`))await db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
+    if(count == 13 && !db.get(`guild_${guild.id}_MemberRemove`))await db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
+    if(count == 14 && !db.get(`guild_${guild.id}_Memberleft`))await db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
+    if(count == 15 && !db.get(`guild_${guild.id}_prefix`) && obj.Prefix !== (null || '{}'))await db.set(`guild_${guild.id}_prefix`, obj.Prefix)
   })
-            });
+  guild.fetchOwner().then(creator => {
+  let Guild = { 
+  Name: `${guild.name}`,
+  MemberCount: `${guild.memberCount}`, 
+  ID: `${guild.id}`,
+  Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
+  Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerId}`,
+  Prefix: db.get(`guild_${guild.id}_prefix`),
+  Category: db.get(`guild_${guild.id}_Category`),
+  Channels: {
+    Message1: db.get(`guild_${guild.id}_Message-1`),
+    Message2: db.get(`guild_${guild.id}_Message-2`),
+    Voice: db.get(`guild_${guild.id}_Voice`),
+    Logs: db.get(`guild_${guild.id}_Logs`),
+    Role: db.get(`guild_${guild.id}_Role`),
+    Channel: db.get(`guild_${guild.id}_Channel`),
+    Nickname: db.get(`guild_${guild.id}_Nickname`),
+    Clear: db.get(`guild_${guild.id}_Clear`),
+    Infos: db.get(`guild_${guild.id}_Infos`),
+    MemberCount: db.get(`guild_${guild.id}_MemberCount`),
+  },
+  Custom: {
+    Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd`),
+    Welcome: db.get(`guild_${guild.id}_Memberwelcome`),
+    Left_Ch: db.get(`guild_${guild.id}_MemberRemove`),
+    Left: db.get(`guild_${guild.id}_Memberleft`),
+  }
+  }
+  let data = JSON.stringify(Guild, null, 2)
+  fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
+})
+})
+db.set(`guild_787081936719708221_prefix`, ",")
 	process.on('uncaughtException', error => {
   Client.channels.cache.get(Ch_Err).send(`**${moment().format('H:mm:ss')}** Erreur : ${error}`)
   console.log(error)
 });
 });
 
-Client.on('messageCreate', async message => {
-  const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
-    const args = message.content.substring(Prefix.length).split(` `);
-await Message(message)
-
-    if(message.content.startsWith(`${Prefix}prefix`))  {
-
-      if(!message.member.permissionsIn().has('MANAGE_GUILD')) return message.channel.send (`Tu n'as pas les perms`)
-      if(!args[1]) return message.channel.send(`Tu doit spécialiser un prefix`)
-      if(args[1].length > 3) return message.channel.send(`U prefix ne peut avoir plus de 3 charactères`)
-      if(args[1] === db.get(`guild_${message.guild.id}_prefix`)) return message.channel.send(`C'est déjà le prefix`)
-      if(args[1] === `,`) db.delete(`guild_${message.guild.id}_prefix`)
-      db.set(`guild_${message.guild.id}_prefix`, args[1])
-      message.channel.send(`Le nouveau prefix est ${args[1]}`)
-      message.guild.owner.send(`Dans votre serveur : **${message.guild.name}**, **${message.author.tag}** a changé le prefix en : *${args[1]}* . Notez-le`)
+Client.on('interactionCreate', async interaction => {
+	if (!interaction.isCommand()) return;
+  if(interaction.commandName === 'set') {
+    var Type = interaction.options.getString('type')
+    var Channel = interaction.options.getChannel('salon')
+    var Etat = interaction.options.getString('etat')
+    if(Type == 'Add') {
+      var type = 'welcome'
+      var fr = 'Arrivé'
+    } else {
+      var type = 'left'
+      var fr = 'Départ'
     }
-const command = args.shift().toLowerCase()
-
-if(message.content.startsWith(Prefix + `view`)){
-  if(!args[0]) return message.channel.send(`${Prefix}view **channel**/**role**`)
-    if(args[0] == `channel`){
-      var a = db.get(`guild_${message.guild.id}_MemberAdd`)
-      var b = db.get(`guild_${message.guild.id}_Memberwelcome`)
-      if(a == `undefined`) var c = `*Non définie*`
-      else var c = Client.channels.cache.find(ch => ch.id == a)
-      var e = db.get(`guild_${message.guild.id}_MemberRemove`)
-      var f = db.get(`guild_${message.guild.id}_Memberleft`)
-      if(e == `undefined`)var g = `*Non définie*`
-      else var g = Client.channels.cache.find(ch => ch.id == e)
-      if(!message.guild.me.permissionsIn(c).has('SEND_MESSAGES')) message.channel.send(`Je n'ai pas les permissions dans **${c}**`)
-      message.channel.send(`Le channel **welcome** est : **${c}** et il est **${b}**`)
-      if(!message.guild.me.permissionsIn(g).has('SEND_MESSAGES')) message.channel.send(`Je n'ai pas les permissions dans **${g}**`)
-        message.channel.send(`Le channel **left** est : **${g}** et il est **${f}**`)
-        }
+    var Add =await db.get(`guild_${interaction.guild.id}_MemberAdd`)
+    var welcome =await db.get(`guild_${interaction.guild.id}_Memberwelcome`)
+    var Remove =await db.get(`guild_${interaction.guild.id}_MemberRemove`)
+    var left =await db.get(`guild_${interaction.guild.id}_Memberleft`)
+    if(Channel != undefined) var chan = Channel.id
+   await db.set(`guild_${interaction.guild.id}_Member${Type}`, (chan ||await db.get(`guild_${interaction.guild.id}_Member${Type}`)))
+   await db.set(`guild_${interaction.guild.id}_Member${type}`, (Etat ||await db.get(`guild_${interaction.guild.id}_Member${type}`)))
+    if((Channel && Etat) == undefined) return interaction.reply(`Le salon ${Client.channels.cache.get(Add)} est ${welcome} pour le salon d'arrivé et ${Client.channels.cache.get(Remove)} est ${left} pour le salon de départ`)
+    interaction.reply(`Le salon ${Channel.name} est ${Etat} pour ${fr}`)
   }
-
-if(message.content.startsWith(Prefix + `set`)){
-  if(!args[0]) return message.channel.send(`${Prefix}set **channel**/**role**`)
-    if(args[0] == `channel`){
-      var Channel = message.channel
-      if(!args[1]) return message.channel.send(`${Prefix}set **channel** (welcome/left) (on/off/name_channel/id_channel)`)
-      if(args[1] == `welcome`){
-        if(!args[2]) {
-          db.set(`guild_${message.guild.id}_MemberAdd`, Channel.id)
-          message.channel.send(`Le channel ${Channel} est maintenant le lieu du message de bienvenue`)
-        }
-      else if(args[2]){
-        if(isNaN(args[2])){
-        if(args[2] == `on`){
-          db.set(`guild_${message.guild.id}_Memberwelcome`, `On`)
-          message.channel.send(`Le channel **${args[1]}** de bienvenue est maintenant activé`);
-        } else if(args[2] == `off`){
-          db.set(`guild_${message.guild.id}_Memberwelcome`, `Off`)
-          message.channel.send(`Le channel **${args[1]}** de bienvenue est maintenant désactivé`);
-        } else {
-          var Channel = message.guild.channels.cache.find(ch => ch.name == args[2])
-          db.set(`guild_${message.guild.id}_MemberAdd`, Channel.id)
-          message.channel.send(`Le channel ${Channel} est maintenant le lieu du message de bienvenue`)
-        }
-        } else {
-          if(!message.guild.channels.cache.find(ch => ch.id == args[2])) return;
-          db.set(`guild_${message.guild.id}_MemberAdd`, args[2])
-          var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
-          message.channel.send(`Le channel ${Ch} est maintenant le lieu du message de bienvenue`)
-        }
-      }
-    } else if(args[1] == `left`){
-      if(!args[2]) {
-        db.set(`guild_${message.guild.id}_MemberRemove`, Channel.id)
-        message.channel.send(`Le channel ${Channel} est maintenant le lieu du message d'adieu`)
-      }
-    else if(args[2]){
-      if(isNaN(args[2])){
-      if(args[2] == `on`){
-        db.set(`guild_${message.guild.id}_Memberleft`, `On`)
-        message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant activé`);
-      } else if(args[2] == `off`){
-        db.set(`guild_${message.guild.id}_Memberleft`, `Off`)
-        message.channel.send(`Le channel **${args[1]}** d'adieu est maintenant désactivé`);
-      } else {
-        var Channel = message.guild.channels.cache.find(ch => ch.name == args[2])
-        db.set(`guild_${message.guild.id}_MemberRemove`, Channel.id)
-        message.channel.send(`Le channel ${Channel} est maintenant le lieu du message d'adieu`)
-      }
-      } else {
-        if(!message.guild.channels.cache.find(ch => ch.id == args[2])) return;
-        db.set(`guild_${message.guild.id}_MemberRemove`, args[2])
-        var Ch = message.guild.channels.cache.find(ch => ch.id == args[2])
-        message.channel.send(`Le channel ${Ch} est maintenant le lieu du message d'adieu`)
-      }
-    }
-    }
-  }
-}
-    
-    if(message.content == Prefix + `help`){
-      const Embed = new Discord.MessageEmbed()
-      Embed.setColor(Bot_Color)
-      Embed.setAuthor({"name": `Créateur : ${CreatorTag}`, "iconURL": Client.users.cache.get(CreatorID).avatarURL({ dynamic: true, size: 4096})})
-      Embed.setTitle(`Les commandes du bot (certaines peuvent être activés en message privé_)`)
-      Embed.addField(`${Prefix}prefix`, `Change le prefix du bot pour le serveur`, true)
-      Embed.addField(`${Prefix}stat`, `Statistiques du joueur`, true)
-      Embed.addField(`${Prefix}role`, `Créer un changement pour les roles dans le serveur`, true)
-      Embed.addField(`${Prefix}join`, `Le bot vient dans votre vocal`, true)
-      Embed.addField(`${Prefix}leave`, `Le bot quitte votre vocal`, true)
-      Embed.addField(`${Prefix}play`, `Le bot joue de la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}skip`, `Le bot passe la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}loop`, `Le bot joue en boucle la musique dans votre vocal`, true)
-      Embed.addField(`${Prefix}queue`, `Montre la liste des musiques du serveur`, true)
-      Embed.addField(`${Prefix}volume`, `Modifie le volume dans votre vocal (à la fin de la musique en cours)`, true)
-      Embed.addField(`${Prefix}membercount`, `Affiche le nombre de joueur sur le serveur`, true)
-      Embed.addField(`${Prefix}invite`, `Donne en mp l'url du bot/serveur`, true)
-      Embed.addField(`${Prefix}ban`, `Permet de Ban le joueur mentionné du serveur`, true)
-      Embed.addField(`${Prefix}kick`, `Permet de Kick le joueur mentionné du serveur`, true)
-      Embed.addField(`${Prefix}clear`, `Retire les messages du salon`, true)
-      Embed.addField(`${Prefix}pres`, `Présente le bot`, true)
-      Embed.addField(`${Prefix}maths_`, `Fait des maths`, true)
-      Embed.addField(`${Prefix}say_`, `Fait parler le bot`, true)
-      Embed.addField(`${Prefix}set`, `Paramètre le bot`, true)
-      Embed.addField(`${Prefix}view`, `Vois les paramètres de bot`, true)
-      Embed.addField(`${Prefix}download_`, `Télécharge votre musique/vidéo (Youtube et Soundcloud)`, true)
-      Embed.addField(`${Prefix}search_`, `Cherche votre musique/vidéo (Youtube et Soundcloud)`, true)
-        message.channel.send({ embeds: [Embed]})
-    }
-
-    if(message.content == Prefix + `pres`){
-      const embed = new Discord.MessageEmbed()
-      .setColor(`42ff00`)
-      .setAuthor({"name": `Créateur : ${CreatorTag} ; ${Client.user.tag}`, "iconURL": `https://i.ibb.co/TwgW11w/Logo-Xitef156-2-5.png`})
-      .setTitle(`Xitef156`)
-      .setURL('https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA')
-      .setDescription(`Regardez mes vidéos [Youtube](https://www.youtube.com/channel/UCDdDwCLs63dLZsUP7xz1QaA)`)
-      .addField(`Teespring`, `Regarder ma boutique sur [Teespring](https://teespring.com/fr/vetements-xitef-rouge)`, true)
-      .setURL('https://teespring.com/fr/vetements-xitef-rouge')
-      .addField(`Discord`, `[Invite moi !](${Bot_link}) ou [Rejoin le serveur officiel](https://discord.gg/VsQG7ccj9t)`, true)
-      .setTimestamp()
-      .setFooter({"text": `Team Dragon`, "iconURL": Client.user.displayAvatarURL()})
-      message.channel.send({ embeds: [embed]})
-  }
-if(AuthifCreator){
-
-if(message.content.startsWith(Prefix + `get_msg`)){
-  var amount = args[0]; // Amount of messages which should be deleted
-    if(!amount)return message.channel.send('Vous n\'avez pas donné une quantité de messages qui devraient être supprimés !') // Checks if the `amount` parameter is given
-    if(isNaN(amount)) return message.channel.send('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
-    if(amount > 100) return message.channel.send('Vous ne pouvez pas supprimer plus de 100 messages à la fois !') // Checks if the `amount` integer is bigger than 100
-    if(amount < 1) return message.channel.send('Vous devez supprimer au moins 1 message !') // Checks if the `amount` integer is smaller than 1
-    if(!Client.channels.cache.get(args[1])) return message.channel.send(`Mauvais id de channel`)
-    message.delete()
-    if(1 < amount > 100) var amount = amount + 1
-    message.author.send('```dans '+ message.guild.name + ', les messages supprimés de ' + message.author + ' sont : ```')
-    Client.channels.cache.get(args[1]).messages.fetch({ limit: amount }).then(messages => {
-          messages.forEach(msg => message.author.send('**' + msg.author.tag + '** : ```' + msg.content + '```\n'))
-  })
-}
-
-  if(message.content === Prefix + `ptdr`){
-    const id = `ajOMDKvISDc`
-    const Embed = new Discord.MessageEmbed()
-    .setAuthor({"name": `Nouvelle vidéo`})
-    .setImage(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
-    .setTitle(`Geometry Dash Meltdown 100%`)
-    .setURL(`https://www.youtube.com/watch?v=${id}`)
-    .setTimestamp()
-    .setColor('#42ff00')
-    message.channel.send({content: `@everyone`, embeds: [Embed]})
-}
-
-if(message.content == Prefix + `xd`){
-  message.guild.channels.create('⛏-Minecraft-Console-⛏', {
-    type: 'GUILD_TEXT',
-    parent: message.channel.parent,
-    permissionOverwrites: [
-      {id: message.guild.id,deny: ['SEND_MESSAGES','VIEW_CHANNEL']
-      },
-      {id: CreatorID,allow: ['SEND_MESSAGES','MANAGE_CHANNELS','VIEW_CHANNEL']
-    }],
-    position: 2
-    }).then(Console => {
-      db.set(`guild_${message.guild.id}_Minecraft-Console`, Console.id)
-      message.author.send(`${Console.id}`)
-    })
-}
-
-if(message.content.startsWith(Prefix + `lol`)){
-          const c = Client.channels.cache.get(args[0])
-          console.log(c)
-        message.channel.send(`${c.toString()}`)
-    }
-
-if(message.content == Prefix + `xD`){
-  message.channel.overwritePermissions([
-    {
-      id: message.guild.id,
-      allow: ['SEND_MESSAGES'],
-    },
-  ]);
-}
-if(message.content === `!xptdr`){
-  const category = message.guild.channels.cache.get(message.channel.parentId); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
-const guild = await Client.guilds.cache.find(g => g.name === message.channel.parent);
-category.children.forEach(async Ch => {
-  const ch = await Client.channels.cache.get(Ch.id)
-  setTimeout(() => {
-  if(ch.type == 'GUILD_CATEGORY') return db.set(`guild_${guild.id}_Category`, ch.id);
-  if(ch.isVoice()) var Channel = `MemberCount`
-  else {
-    var i = ch.name.charAt(0);
-    var Channel = ch.name.replace(i, i.toUpperCase());
-  }
-  db.set(`guild_${guild.name}_${Channel}`, ch.id)
-}, 1000);
-});
-}
-if(message.content == `,mdr`){
-  const category = message.guild.channels.cache.get(message.channel.parentId); // You can use `find` instead of `get` to fetch the category using a name: `find(cat => cat.name === 'test')
-await category.children.forEach(channel => channel.delete())
-category.delete()
-}
-}
-
-    if (command === `weather`) {
-        const city = args[0]
-    weather.find({search: args.join(` `), degreeType: `C`}, function(error, result){
-      if (error) return message.channel.send(error)
+  if(interaction.commandName === 'weather'){
+    const city = interaction.options.data[0].value
+    const country = interaction.options.data[1].value
+    weather.find({search: `${city}, ${country}`, degreeType: `C`}, function(error, result){
+      if (error) return interaction.reply(error)
       if (error) return Client.channels.cache.get(Ch_Err).send(`Erreur de la commande *weather* : **${error}**`)
-      if (!city) return message.channel.send(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
-      if (result === undefined || result.length === 0) return message.channel.send(`Vous n'avez pas spécifié de lieu valide`)
+      if (!city) return interaction.reply(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
+      if (result === undefined || result.length === 0) return interaction.reply(`Vous n'avez pas spécifié de lieu valide`)
       let current = result[0].current
       let location = result[0].location
-      const embed = new Discord.MessageEmbed()
+      const embed = new Discord.interactionEmbed()
       .setTitle(`Affichage des informations météo pour ${current.observationpoint}`)
       .setDescription(current.skytext)
       .setThumbnail(current.imageUrl)
@@ -590,254 +462,263 @@ category.delete()
       .addField(`Vitesse du vent : `, current.winddisplay, true)
       .addField(`Humidité : `, `${current.humidity}%`, true)
       .addField(`Timezone : `, `UTC${location.timezone}`, true)
-      message.channel.send({ embeds: [embed]})
-
-    })
-
-  }
-
-    if (command === `maths`) {
-        let op = args[1]
-    let no1 = args[0]
-    let no2 = args[2]
-    let parseNo1 = parseInt(no1)
-    let parseNo2 = parseInt(no2)
-    let xD = `Vous devez entrer l'opération et les opérandes à côté de la commande comme : `
-    let ans
-    if (!op) return message.reply(`${xD}\`,maths 1 + 2\``)
-    if (!args[0] || !args[2]) return message.reply(`${xD}\`,maths 1 ${args[1]} 2\``)
-      if (op === `+`) ans = parseNo1 + parseNo2
-      else if (op === `-`) ans = parseNo1 - parseNo2
-      else if (op === `*`) ans = parseNo1 * parseNo2
-      else if (op === `/`) ans = parseNo1 / parseNo2
-      else if (op === `mod`) ans = parseNo1 % parseNo2
-      else if (op === `pow`) ans = Math.pow(parseNo1, parseNo2)
-      else if (op === `root`) ans = Math.pow(parseNo1, 1/parseNo2)
-      setTimeout(function () {
-        if (ans === 69) message.channel.send(`http://www.sexologie-couple.com/wp-content/uploads/2007/11/69.jpg`)
-        if (ans === 0) message.channel.send(`La tête à toto ptdr`)
-      message.channel.send(`Réponse : ` + ans)
-    }, 25)
+      interaction.reply({ embeds: [embed]})
+  })
 }
-if(message.content == Prefix + `link`){
+if(interaction.commandName === 'maths') {
+  const args = interaction.options.data
+  let op = args[1].value
+  let no1 = args[0].value
+  let no2 = args[2].value
+  let parseNo1 = parseInt(no1)
+  let parseNo2 = parseInt(no2)
+  let xD = `Vous devez entrer l'opération et les opérandes à côté de la commande comme : `
+  let ans
+  if (!op) return interaction.reply(`${xD}\`,maths 1 + 2\``)
+  if (!args[0] || !args[2]) return interaction.reply(`${xD}\`,maths 1 ${args[1]} 2\``)
+    if (op === `+`) ans = parseNo1 + parseNo2
+    else if (op === `-`) ans = parseNo1 - parseNo2
+    else if (op === `*`) ans = parseNo1 * parseNo2
+    else if (op === `/`) ans = parseNo1 / parseNo2
+    else if (op === `mod`) ans = parseNo1 % parseNo2
+    else if (op === `pow`) ans = Math.pow(parseNo1, parseNo2)
+    else if (op === `root`) ans = Math.pow(parseNo1, 1/parseNo2)
+    setTimeout(function () {
+      interaction.reply(`Réponse : ` + ans)
+  }, 25)
+}
+if(interaction.commandName === 'link') {
   var Perm = Discord.Permissions.FLAGS
-  message.author.send(
+  interaction.reply(
   Client.generateInvite({ scopes: ['bot'], permissions: [Perm.ADMINISTRATOR, Perm.VIEW_AUDIT_LOG, Perm.KICK_MEMBERS, Perm.BAN_MEMBERS, Perm.SEND_MESSAGES, Perm.MANAGE_NICKNAMES, Perm.MANAGE_CHANNELS, Perm.MANAGE_MESSAGES, Perm.MANAGE_ROLES, Perm.MANAGE_GUILD, Perm.MENTION_EVERYONE]
   }))
+}
+if(interaction.commandName === 'role') {
+  const str = interaction.options.data
+  const Desc = interaction.options.getString('desc').split(` ; `)
+  const Id = interaction.options.getString('ids').split(` ; `)
+  const Emoji = interaction.options.getString('emoji').split(` ; `)
+  const Title = interaction.options.getString('titre')
+  const Descript = interaction.options.getString('description')
+  const Thumb = interaction.options.getString('miniature')
+  if(Id.length !== Emoji.length) return interaction.reply(`Il n'y a pas le même nombre de rôle que d'émojis`)
+  if(Desc.length !== Emoji.length) return interaction.reply(`Il n'y a pas le même nombre d'émojis que de description`)
+  if(Desc.length !== Id.length) return interaction.reply(`Il n'y a pas le même nombre de rôle que de description`)
+  Id.forEach(role => { if(isNaN(role)) return interaction.reply(`Il y a des rôles qui ne sont pas des id`) })
+  Emoji.forEach(emo => { if(emo.startsWith(`:`)) return interaction.reply(`Il y a des émojis qui commence pas par :`) })
+  const Embed = new Discord.interactionEmbed()
+  .setColor(Bot_Color)
+  .setTimestamp()
+  Id.forEach(role => { if(!interaction.guild.roles.fetch(role)) return interaction.reply(`${role} est inconnu`) })
+  if(Title != undefined) Embed.setTitle(Title)
+  if(Descript != undefined) Embed.setDescription(Descript)
+  if(Thumb != undefined) Embed.setThumbnail(Thumb || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`)
+  await Id.forEach(async (Role,index) => {
+    var desc = Desc[index]
+    var emo = Emoji[index]
+    var role = await interaction.guild.roles.cache.find(ID => ID.id == Role)
+    Embed.addField(`${emo} ${role.name}`, desc)
+  })
+  Reaction()
+  async function Reaction() {
+    await interaction.reply('Pong!');
+  await interaction.deleteReply();
+    interaction.channel.send({embeds: [Embed]}).then(async msg => {
+      Emoji.forEach(emo => msg.react(emo));
+      var List_react = React.get(interaction.guild.id)
+      var react = {
+        interaction: msg,
+        emojis: Emoji,
+        roles: Id
+      }
+      if(!List_react){
+        var List = [];
+        React.set(interaction.guild.id, List)
+        List.push(react)
+      } else List_react.push(react)
+})
   }
-if(message.channel.type == `dm`) return;
-if(message.author.bot) return; // Les commandes en privé ne peuvent pa être reçu
-
-    if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
-        if(message.content.startsWith(Prefix + `ban`)){
-            let mention = message.mentions.members.first();
-            if(mention == undefined)message.reply(`Membre non ou mal mentionné`);
-            else {
-                if(mention.bannable){
-                    mention.ban()
-                    message.channel.send(mention.displayName.tag + ` a été banni avec succès`);
-                }
-                else message.reply(`Impossible de ban ce membre`);
-            }
-        }
-        else if(message.content.startsWith(Prefix + `kick`)){
-            let mention = message.mentions.members.first();
-            if(mention == undefined)message.reply(`Membre non ou mal mentionné`);
-            else {
-                if(mention.kickable){
-                    mention.kick()
-                    message.channel.send(mention.displayName.tag + ` a été kick avec succès`);
-                }
-                else  message.reply(`Impossible de kick ce membre`);
-            }
-        }
-  }
-    
-    if(message.content == Prefix + `membercount` || message.content == Prefix + `mc`)message.channel.send(`Nous sommes **${memberCount}** membres sur le serveurs (y compris moi)`);
-
-    if(message.content.startsWith(Prefix + `role`)){
-          const mention = message.mentions.members.first();
-      if(!args[0]) return message.channel.send (`add ; remove ; delete ; create ; embed`);
-        if(args[0] === `add`){
-          if(mention == undefined) return message.reply(`Membre non ou mal mentionné`);
-            if(message.guild.roles.cache.find(role => role.name == `${args[2]}`)){
-              let a_role = message.guild.roles.cache.find(role => role.name === `${args[2]}`);
-              mention.roles.add(a_role.id)
-              message.channel.send(`${mention} a eu le rôle ${a_role}`)
-            } 
-            else message.reply(args[0] + ` as déjà ce rôle`)
-          }
-          if(args[0] === `remove`){
-          const mention = message.mentions.members.first();
-          if(mention == undefined) return message.reply(`Membre non ou mal mentionné`);
-          else {
-          if(message.guild.roles.cache.find(role => role.name == args[2])){
-            let r_role = message.guild.roles.cache.find(role => role.name === args[2]);
-            mention.roles.remove(r_role.id)
-            message.channel.send(`${mention} n'a plus le rôle ${r_role}`)
-          } 
-          else message.reply(`Tu n'as pas ce rôle`)
-        }
-      }
-      if(args[0] === `delete`){
-          const role_d = message.guild.roles.cache.find(role => role.name === args[2])
-        if(message.guild.roles.cache.find(role => role.name == args[2])){
-          if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
-          role_d.delete()
-          message.channel.send(`${args[1]} n'existe plus`)
-        }
-      } else message.reply(`${role_d} n\'existe pas`)
-      }
-      if(args[0] === `embed`){
-        var str = args.join(` `).replace(`embed`, ``)
-        const Args0 = str.substring(str.indexOf(`'`) + 1, str.lastIndexOf(`'`)).split(`;`)
-        const Args1 = str.substring(str.indexOf(`{`) + 1, str.lastIndexOf(`}`)).split(`;`)
-        const Args2 = str.substring(str.indexOf(`[`) + 1, str.lastIndexOf(`]`)).replace(` `, ``).split(`;`)
-        const Args3 = str.substring(str.indexOf(`(`) + 1, str.lastIndexOf(`)`)).split(`;`)
-        if(Args1.length !== Args2.length) return message.channel.send(`Il n'y a pas le même nombre de rôle que d'émojis`)
-        if(Args2.length !== Args3.length) return message.channel.send(`Il n'y a pas le même nombre d'émojis que de description`)
-        if(Args1.length !== Args3.length) return message.channel.send(`Il n'y a pas le même nombre de rôle que de description`)
-        Args1.forEach(role => { if(isNaN(role)) return message.channel.send(`Il y a des rôles qui ne sont pas des id`) })
-        Args2.forEach(emo => { if(emo.startsWith(`:`)) return message.channel.send(`Il y a des émojis qui commence pas par :`) })
-        const Embed = new Discord.MessageEmbed()
-        .setColor(Bot_Color)
-        .setTimestamp()
-        Args1.forEach(role => { if(!message.guild.roles.fetch(role)) return message.channel.send(`${role} est inconnu`) })
-        Args0.forEach(title => { if(title.startsWith(`Title`)) Embed.setTitle(title.replace(`Title:`, ``)) })
-        Args0.forEach(desc => { if(desc.startsWith(`Desc`)) Embed.setDescription(desc.replace(`Desc:`, ``)) })
-        Args0.forEach(thumb => { if(thumb.startsWith(`Thumb`) && thumb.includes(`https`))Embed.setThumbnail(thumb.replace(`Thumb:`, ``) || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`) })
-        await Args1.forEach(async (Role,index) => {
-          var desc = Args3[index]
-          var emo = Args2[index]
-          var role = await message.guild.roles.cache.find(ID => ID.id == Role)
-          Embed.addField(`${emo} ${role.name}`, desc)
-        })
-        Reaction()
-        async function Reaction() {
-          message.channel.send({embeds: [Embed]}).then(async msg => {
-            Args2.forEach(emo => msg.react(emo));
-            var List_react = React.get(message.guild.id)
-            var react = {
-              message: msg,
-              emojis: Args2,
-              roles: Args1
-            }
-            if(!List_react){
-              var List = [];
-              React.set(message.guild.id, List)
-              List.push(react)
-            } else List_react.push(react)
-    })
-        }
-      }
-
-      if(args[0] == `create`){
-        if(!args[1]) return message.channel.send(`Donne une couleur de role en premier`)
-        if(!args[2]) return message.channel.send(`Donne un nom de role après`)
-        if(message.member.permissions.toArray().includes(`ADMINISTRATOR`) || AuthifCreator){
-              message.guild.roles.create({ // Creating the role since it doesn't exist.
-                    data: {
-                        name: `${args.slice(2).join(` `)}`,
-                        color: `${args[1]}`,
-                        permissions: 0
-                    }
-                })
-                message.channel.send(`Le role ${args.slice(2).join(` `)} a été créer`);
-              }
-      }
-  }
-
-if(message.content.startsWith(Prefix + `list`)){
-  const Embed = new Discord.MessageEmbed()
+}
+if(interaction.commandName === 'list') {
+  await interaction.reply('Ok')
+  await interaction.deleteReply()
+  const Embed = new Discord.interactionEmbed
   Embed.setColor(`#42ff00`)
-    if(args[0] === `role`){
-      const Role_g = message.guild.roles.cache.map(role => `**${role.toString()}** ; **${role.name}** en **${role.position}** position`);
-      Embed.setTitle(`Les ${message.guild.roles.cache.size} du serveur`)
-      Embed.setDescription(Role_g)
+    if(interaction.options.getString('type') === `role`){
+      const Role_g = interaction.guild.roles.cache.map(role => `**${role.toString()}** ; **${role.name}** en **${role.position}** position`);
+      await Embed.setTitle(`Les ${interaction.guild.roles.cache.size} du serveur`)
+      await Embed.setDescription(Role_g.join(' ; '))
+      interaction.member.send({ embeds: [Embed]})
     }
-    if(args[0] === `member`){
-      const Role_m = message.guild.members.cache.map(member => `**${member.toString()}** ; **${member.user.username}** ; **${member.user.tag}**`);
-      Embed.setTitle(`Les ${message.guild.members.cache.size} membres du serveur`)
-      Embed.setDescription(Role_m)
+    if(interaction.options.getString('type') === `member`){
+      const Role_m = interaction.guild.members.cache.map(member => `**${member.toString()}** ; **${member.user.username}** ; **${member.user.tag}**`);
+      await Embed.setTitle(`Les ${interaction.guild.members.cache.size} membres du serveur`)
+      await Embed.setDescription(Role_m.join(' ; '))
+      interaction.member.send({ embeds: [Embed]})
     }
-    message.author.send({ embeds: [Embed]})
 }
-
-      if(message.content.startsWith(Prefix + `clear`)){
-        var amount = parseInt(args[0]); // Amount of messages which should be deleted
-        var Reset = 0
-        if(AuthifCreator) var Reset = 1
-        if(message.author.id === message.guild.ownerId) var Reset = 1
-        if(message.member.permissions.toArray().includes('ADMINISTRATOR')) var Reset = 1
-        if(Reset === 0) return message.channel.send (`Tu n\'es pas le chef du serveur`);
-          if(!amount) return message.channel.send('Vous n\'avez pas donné une quantité de messages qui devraient être supprimés !') // Checks if the `amount` parameter is given
-          if(isNaN(amount)) return message.channel.send('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
-          if(amount > 100) return message.channel.send('Vous ne pouvez pas supprimer plus de 100 messages à la fois !') // Checks if the `amount` integer is bigger than 100
-          if(1 > amount) return message.channel.send('Vous devez supprimer au moins 1 message !') // Checks if the `amount` integer is smaller than 1
-          await message.delete()
-          message.channel.messages.fetch({ limit: amount }).then(messages => message.channel.bulkDelete(messages))
-  }
-
-  if(message.content.startsWith(Prefix + `ulti_clear`)){
-    setInterval(() => {
-      message.channel.messages.fetch({ limit: 25 }).then(messages => {// Fetches the messages
-        message.channel.bulkDelete(messages // Bulk deletes all messages that have been fetched and are not older than 14 days (due to the Discord API);
-        )
-      })
-    }, 5000)
+if(interaction.commandName === 'say') {
+  await interaction.reply('Envoie..')
+  await interaction.deleteReply()
+  Client.channels.cache.get(interaction.options.getChannel('salon').id || interaction.channelId).send(interaction.options.getString('msg'))
 }
-
-    if(message.content.startsWith(Prefix + `invite`)){
-      if(args[0] == `bot`)message.author.send(`https://discord.com/api/oauth2/authorize?client_id=788076422778060920&permissions=402794686&scope=bot`);
-   else if(args[0] == `server`)message.author.send(`https://discord.gg/VsQG7ccj9t`);
-    else message.reply( Prefix + `bot ; ` + Prefix + `server` );
-  }
-
-    if(command === `say`) message.channel.send(args.join(` `))
-    
-    if(message.content.startsWith(Prefix + `stat`)){
-      if(!args[0] || !args[0].startsWith('<@&') && args[0].endsWith('>')) return message.channel.send(`Mentionne quelqu'un pour l'utiliser`)
-      message.guild.members.fetch(message.guild.ownerId).then(creator => {
-      let Mention = args[0].slice(3, -1);
-      const MenTion = Client.users.cache.get(Mention);
-      const mention = Client.guilds.cache.get(message.guild.id).members.fetch(MenTion)
-      const U_Role = mention.roles.cache.map(role => role.name).join(` `);
-      if(!mention) return message.reply(`Membre non ou mal mentionné`)
-    message.author.send(`**${mention.user.username}** qui a pour identifient : **${mention.user.toString()}** *ou* **${mention.user.tag}** il a comme role : **${U_Role.toString()}** dans le serveur : **${message.guild.name}**, créer par ${creator.user.tag}`)
+if(interaction.commandName === 'tempban') {
+  if(interaction.member.permissions.toArray().includes(`ADMINISTRATOR`) || interaction.member.id === '776140752752869398'){
+    var now = moment()
+    var NOW = `${moment().format('lll')}`
+        let member = interaction.options.getMember('membre')
+        let reason = interaction.options.getString('raison')
+        let min = interaction.options.getNumber('minute')
+        let hour = interaction.options.getMember('heure')
+        let day = interaction.options.getMember('jour')
+        var hours = day * 24 + hour
+        var mins = hours * 60 + min
+        var s = mins * 60
+        var ms = s * 1000
+        var finish = now.add({milliseconds:ms})
+        if(member == undefined)interaction.reply(`Membre non ou mal mentionné`);
+        else {
+            if(member.bannable && interaction.member.user.id != member.user.id){
+                member.ban({reason: `${reason || 'Aucune raison'}\n\n(Par Dragon Bot et ${interaction.member.user.tag})`})
+                Unban(member,interaction.guild.id,ms,interaction.member.user.id,NOW)
+                interaction.reply(`<@${member.user.id}> a été banni avec succès ; Il sera débanni le ${finish.format('lll')}`);
+            }
+            else interaction.reply(`Impossible de ban ce membre`);
+        }
+} else interaction.reply("Tu n'es pas administrateur")
+}
+if(interaction.commandName === 'clear') {
+  var amount = parseInt(interaction.options.getNumber('nombre')); // Amount of interactions which should be deleted
+  var Reset = 0
+  var Author = interaction.member.user.id
+  if(interaction.member.user.id === '776140752752869398') var Reset = 1
+  if(Author === interaction.guild.ownerId) var Reset = 1
+  if(interaction.member.permissions.toArray().includes('ADMINISTRATOR')) var Reset = 1
+  if(Reset === 0) return interaction.reply(`Tu n\'es pas le chef du serveur`);
+    if(!amount) return interaction.reply('Vous n\'avez pas donné une quantité de interactions qui devraient être supprimés !') // Checks if the `amount` parameter is given
+    if(isNaN(amount)) return interaction.reply('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
+    if(amount > 100) return interaction.reply('Vous ne pouvez pas supprimer plus de 100 interactions à la fois !') // Checks if the `amount` integer is bigger than 100
+    if(1 > amount) return interaction.reply('Vous devez supprimer au moins 1 interaction !') // Checks if the `amount` integer is smaller than 1
+    await interaction.reply('Ok ça marche')
+    await interaction.deleteReply()
+    interaction.channel.interactions.fetch({ limit: amount }).then(interactions => {
+      try {
+        interaction.channel.bulkDelete(interactions)
+      }
+      catch(e) {
+        interaction.channel.send(`Impossible, erreur : ${e}`)
+      }
     })
-  }
-
-    if(message.content == Prefix + `join`){
-      if(!message.member.voice.channel.id) return message.channel.send(`Je ne suis n\'es pas en vocal`)
-      if (!Client.voice.adapters.get(message.guild.id)) {
-      Voice.joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator
-    }).removeAllListeners()
+}
+if(interaction.commandName === 'join') {
+  if(!interaction.member.voice.channel.id) return interaction.reply(`Je ne suis n\'es pas en vocal`)
+  if (!Client.voice.adapters.get(interaction.guild.id)) {
+  await Voice.joinVoiceChannel({
+    channelId: interaction.member.voice.channel.id,
+    guildId: interaction.guild.id,
+    adapterCreator: interaction.guild.voiceAdapterCreator
+})
+interaction.reply(`Salon ${interaction.member.voice.channel.name} rejoin avec succès`)
+}
+}
+if(interaction.commandName === 'leave') {
+  if(!interaction.member.voice.channel) return interaction.reply(`Tu dois être dans un vocal`);
+    await player.stop()
+  queue.delete(interaction.guild.id);
+  Voice.getVoiceConnection(interaction.guild.id).destroy();
+  interaction.reply(`Vocal quitté :smiling_face_with_tear:`)
+}
+if(interaction.commandName === 'skip') {
+  var Songs = queue.get(interaction.guild.id);
+  if(!Songs[0]) {
+    await Voice.getVoiceConnection(interaction.guild.id).destroy();
+    return interaction.reply(`Il y a rien a skip`)
+  } else {
+    await Songs.shift()
+    await player.stop()
+    await Voice.getVoiceConnection(interaction.guild.id).removeAllListeners()
+    await play(interaction.guild.id)
+  interaction.reply(`Skipped !`)
   }
 }
-
-if(message.content.startsWith(Prefix + `play`)){
-  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
-  const permissions = message.member.voice.channel.permissionsFor(message.member.user);
-  if(!permissions.has('CONNECT')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
-  if(!permissions.has('SPEAK')) return message.channel.send(`Tu n\'as pas les bonnes permissions`);
-  if(!args.length) return message.channel.send(`Tu dois mettre un titre de video`)
-  var Songs = queue.get(message.guild.id);
-              if (!Client.voice.adapters.get(message.guild.id)) {
-              var connection = Voice.joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guild.id,
-                adapterCreator: message.guild.voiceAdapterCreator
+if(interaction.commandName === 'queue') {
+  var Songs = queue.get(interaction.guild.id);
+if(!Songs) return interaction.reply(`Il y a rien a voir`)
+const Queue = new Discord.interactionEmbed()
+.setColor(`#00ffff`)
+.setTitle(`Queue de ${interaction.guild.name}`)
+await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
+await interaction.reply({ embeds: [Queue]})
+}
+if(interaction.commandName === 'loop') {
+  var act = interaction.options.getBoolean('etat')
+  if(act == undefined) return interaction.reply(`L'état de la boucle est ${db.get(`guild_${interaction.guild.id}_Music_Looping`)}`)
+  if(act.length > 3) var De = 'Désactivation'
+ await db.set(`guild_${interaction.guild.id}_Music_Looping`, act)
+  interaction.reply(`${De || 'Activation'} de la boucle`)
+}
+if(interaction.commandName === 'volume') {
+  var nmb = interaction.options.getNumber('nombre')
+  if(!nmb) return interaction.reply(`Le volume du serveur est à ${db.get(`guild_${interaction.guild.id}_Volume`) * 10}`)
+ await db.set(`guild_${interaction.guild.id}_Volume`, nmb / 10)
+  interaction.reply(`Le volume est maintenant de ${nmb}`)
+}
+if(interaction.commandName === 'search') {
+  var Search = interaction.options.getString('recherche')
+  var Type = interaction.options.getString('type')
+  var Number = interaction.options.getNumber('nombre')
+  if(Number != undefined) var result = Number
+  else var result = 5
+  if(Type == 'SoundCloud'){
+    await SC.search(Search).then(async Songs => {
+      var songs = Songs.slice( 0, result )
+      if(!songs[0]) return interaction.reply(`Rien trouvé`)
+      await songs.forEach(async (Song,index) => {
+        await SC.getSongInfo(Song.url).then(async song => {
+  const Search2 = new Discord.interactionEmbed()
+  .setColor(Bot_Color)
+  .setImage(song.thumbnail)
+  .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
+  await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
+  await interaction.reply({ embeds: [Search2]})
+        })
+      })
+})
+  }
+  else {
+  var Video = await ytSearch({ search: Search })
+  var videos = Video.videos.slice( 0, result )
+  videos.forEach(async (video, index) => {
+  const YTB = new Discord.interactionEmbed()
+  .setColor(Bot_Color)
+  .setImage(video.image)
+  .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
+  await YTB.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
+  await interaction.reply({ embeds: [YTB]})
+})
+  }
+}
+if(interaction.commandName === 'play') {
+  var Type = interaction.options.getString('type')
+  var Query = interaction.options.getString('recherche')
+  if(!interaction.member.voice.channel) return interaction.reply(`Tu dois être dans un vocal`);
+  const permissions = interaction.member.voice.channel.permissionsFor(interaction.member.user);
+  if(!permissions.has('CONNECT')) return interaction.reply(`Tu n\'as pas les bonnes permissions`);
+  if(!permissions.has('SPEAK')) return interaction.reply(`Tu n\'as pas les bonnes permissions`);
+  var Songs = queue.get(interaction.guild.id);
+              if (!Client.voice.adapters.get(interaction.guild.id)) {
+              var connection = await Voice.joinVoiceChannel({
+                channelId: interaction.member.voice.channel.id,
+                guildId: interaction.guild.id,
+                adapterCreator: interaction.guild.voiceAdapterCreator
             }).removeAllListeners()
           }
 
-  if(args[0] == `soundcloud` || args[0] == `sc`){
-    await message.channel.send(`Recherche de **${args.join(' ').replace('sc ', '')}** sur Soundcloud`).then((msg => msg.suppressEmbeds(true)))
-      const song = await songFinder(args.join(' ').replace('sc ', ''))
-            const New = new Discord.MessageEmbed()
-            if(!song) return message.channel.send(`Rien trouvée`)
+  if(Type === 'SoundCloud'){
+    await interaction.reply(`Recherche de **${Query}** sur Soundcloud`)
+      const song = await songFinder(Query)
+            const New = new Discord.interactionEmbed()
+            if(!song) return interaction.reply(`Rien trouvée`)
             var SONG = {
               type: 'sc',
               title: song.title,
@@ -851,10 +732,10 @@ if(message.content.startsWith(Prefix + `play`)){
             };
             if (!Songs) {
               var Song = [];
-              queue.set(message.guild.id, Song);
+              queue.set(interaction.guild.id, Song);
               Song.push(SONG);
               New.setColor('#ff5d00')
-              play(message.guild.id,message.member.voice.channel.id,message.guild.voiceAdapterCreator)
+              play(connection, interaction.guild)
             } else {
               queue.push(SONG);
               New.setColor('FUCHSIA')
@@ -865,10 +746,10 @@ if(message.content.startsWith(Prefix + `play`)){
 		      .setAuthor({name: song.author.name})
 		      .setURL(song.url)
 		      .setFooter({ text: `Vidéo ID : ${song.id} ; Duration : ${song.duration}`})
-              message.channel.send({ embeds : [New]})
+              interaction.channel.send({ embeds : [New]})
             } else {
-            await message.channel.send(`Recherche de **${args.join(' ')}** sur Youtube`).then((msg => msg.suppressEmbeds(true)))
-            const video = await videoFinder(args.join(' '));
+            await interaction.reply(`Recherche de **${Query}** sur Youtube`)
+            const video = await videoFinder(Query);
 
             if(video){
               const New = new Discord.MessageEmbed()
@@ -886,9 +767,9 @@ if(message.content.startsWith(Prefix + `play`)){
               };
               if (!Songs) {
                 var Songs = [];
-                queue.set(message.guild.id, Songs);
+                queue.set(interaction.guild.id, Songs);
                 Songs.push(song);
-                play(message.guild.id,message.member.voice.channel.id,message.guild.voiceAdapterCreator);
+                play(connection, interaction.guild);
                 New.setColor('RED')
               } else {
                 Songs.push(song);
@@ -900,123 +781,14 @@ if(message.content.startsWith(Prefix + `play`)){
             .setURL(video.url)
             .setAuthor({name: video.author.name})
             .setFooter({text: `Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`});
-            message.channel.send({ embeds : [New]})
+            interaction.channel.send({ embeds : [New]})
           } else {
-              message.channel.send(`Pas de vidéo trouvée`)
-                   queue.delete(message.guild.id);
+              interaction.reply(`Pas de vidéo trouvée`)
+                   queue.delete(interaction.guild.id);
                    return;
                  }
                 }
-              }
-
-if(message.content == Prefix + `leave`){
-  if(!message.member.voice.channel) return message.channel.send(`Tu dois être dans un vocal`);
-    await player.stop()
-  queue.delete(message.guild.id);
-  Voice.getVoiceConnection(message.guild.id).destroy();
-  message.channel.send(`Vocal quitté :smiling_face_with_tear:`)
-              }
-
-if(message.content == Prefix + `skip`){
-  var Songs = queue.get(message.guild.id);
-  if(!Songs[0]) {
-    await Voice.getVoiceConnection(message.guild.id).destroy();
-    return message.channel.send(`Il y a rien a skip`)
-  } else {
-    await Songs.shift()
-    await player.stop()
-    await Voice.getVoiceConnection(message.guild.id).removeAllListeners()
-    await play(message.guild.id)
-  message.channel.send(`Skipped !`)
-  }
 }
-
-if(message.content == Prefix + `queue`){
-  var Songs = queue.get(message.guild.id);
-if(!Songs) return message.channel.send(`Il y a rien a voir`)
-const Queue = new Discord.MessageEmbed()
-.setColor(`#00ffff`)
-.setTitle(`Queue de ${message.guild.name}`)
-await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
-await message.channel.send({ embeds: [Queue]})
-}
-
-if(message.content === Prefix + `loop`){
-  if(db.get(`guild_${message.guild.id}_Music_Looping`) === true){
-    db.set(`guild_${message.guild.id}_Music_Looping`, false)
-    message.channel.send(`Loop désactivé`)
-  } else {
-    db.set(`guild_${message.guild.id}_Music_Looping`, true)
-    message.channel.send(`Loop activé`)
-  }
-}
-if(message.content.startsWith(Prefix + `volume`)){
-  if(!args[0]) return message.channel.send(`Le volume du serveur est à ${db.get(`guild_${message.guild.id}_Volume`)}`)
-  db.set(`guild_${message.guild.id}_Volume`, args[0])
-  message.channel.send(`Le volume est maintenant de ${args[0]}`)
-}
-
-if(message.content == Prefix + `left`){
-  if(message.author.id !== message.guild.ownerId || AuthifNotCreator) return message.channel.send(`Tu n'es pas le chef du serveur`);
-    await message.channel.send(`Adieu...`)
-    message.guild.leave()
-  }
-
-if(message.content.startsWith(Prefix + `search`)){
-  if(!isNaN(args[0]) && !args[0]) message.channel.send(`Tu peux indiquer le nombre de résultat`)
-  if(!args) return message.channel.send(`Tu doit indiquer ce que tu recherche`)
-  if(args[0] && !isNaN(args[0])) {
-    var search1 = await message.content.replace(args[0], ``)
-    var search2 = await search1.replace(search1.substr(0,message.content.indexOf(' ')), ``)
-    var search = await search2.replace(`  `, ``)
-    var result = args[0]
-  } else {
-    var search = args.join(` `)
-    var result = 35
-  }
-  if((args[0] || args[1]) == ('sc' ||'soundcloud')){
-    var Search = search.replace('sc ', '')
-    await SC.search(Search).then(async Songs => {
-      var songs = Songs.slice( 0, result )
-      if(!songs[0]) return message.channel.send(`Rien trouvé`)
-      await songs.forEach(async (Song,index) => {
-        await SC.getSongInfo(Song.url).then(async song => {
-  const Search2 = new Discord.MessageEmbed()
-  .setColor(Bot_Color)
-  .setImage(song.thumbnail)
-  .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
-  await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
-  await message.channel.send({ embeds: [Search2]})
-        })
-      })
-})
-  }
-  else {
-  var Video = await ytSearch({ search: search })
-  var videos = Video.videos.slice( 0, result )
-  videos.forEach(async (video, index) => {
-  const Search = new Discord.MessageEmbed()
-  .setColor(Bot_Color)
-  .setImage(video.image)
-  .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${search}`)
-  await Search.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
-  await message.channel.send({ embeds: [Search]})
-})
-  }
-}
-
-if(message.content == Prefix + `voice`){
-  if(message.guild.id == Bot_Guild_ID) var Guild = Client.guilds.cache.find(g => g.name === message.channel.parent.name)
-  else var Guild = message.guild
-    Guild.channels.cache.filter((c) => c.type == `voice`).forEach((voicechannel) => {
-      var members = `${voicechannel.members.map(z => z.user.toString()).join(` ; `)}`
-      if(members === ``) return;
-            var text = `dans **${voicechannel.name}**, il y a : `
-          message.channel.send(`${text}${members}`)
-        });
-}
-if(message.content == `forget_prefix`) return message.channel.send(Prefix)
-if(message.content == Prefix) return message.channel.send(`Tape une commande. Ex : ${Prefix}help`)
 });
-
-Client.login(process.env.TOKEN);
+const mySecret = process.env['TOKEN']
+Client.login(mySecret)
