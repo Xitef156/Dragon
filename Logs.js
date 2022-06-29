@@ -1,9 +1,8 @@
-const Discord = require('discord.js');
+const Discord = require('discord.js');const {SlashCommandBuilder} = require('@discordjs/builders');
 const Canvas = require('canvas');
-const db = require('quick.db');require('better-sqlite3');
+const {QuickDB} = require('quick.db');require('better-sqlite3');const db = new QuickDB();
 const moment = require('moment');
 const fs = require('fs');
-const ncu = require('npm-check-updates');
 
 const Instent = Discord.Intents.FLAGS
 const Client = new Discord.Client({ intents: [
@@ -89,7 +88,7 @@ const Txt = `${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Em
 return Txt;
 }
 async function Message(message){
-  const Prefix = db.get(`guild_${message.guild.id}_prefix`) || `,`
+  const Prefix = await db.get(`guild_${message.guild.id}_prefix`) || `,`
 
   if(message.author.id == CreatorID) {
     var User = message.author.tag
@@ -97,20 +96,20 @@ async function Message(message){
   else {
     var User = `${message.author.toString()} (**${message.author.tag}**)`
   }
-    const Ch_Msg_1 = db.get(`guild_${message.guild.id}_Message-1`)
+    const Ch_Msg_1 = await db.get(`guild_${message.guild.id}_Message-1`)
     if(message.content === `!xptdr`) return;
     if(message.author.id === Client.user.id && message.content.startsWith(`**`)) return;
     const Time = moment(message.createdAt).format('H:mm:ss')
     if(message.channel.id === Ch_Err) return;
-    if(message.channel.id === 840923591460651008) return;
-    if(message.channel.id === 969739493223596042) return;
-    if(message.channel.id === 969742402577375272) return;
+    if(message.channel.id === '840923591460651008') return;
+    if(message.channel.id === '969739493223596042') return;
+    if(message.channel.id === '969742402577375272') return;
     if(message.channel.id === Ch_Cmd) return;
     if(message.channel.type == 'GUILD_PUBLIC_THREAD' || message.channel.type == 'GUILD_PRIVATE_THREAD') var Channel_Type = `Fil`
     else var Channel_Type = `Salon`
-    if(message.channel.type == 'DM') var Channel = await 847579263988531210
-    if(message.guild.id === 787081936719708221) var Channel = await 871919663670517780
-    if(!Channel && Ch_Msg_1 !== 868950307848200202) var Channel = await Ch_Msg_1
+    if(message.channel.type == 'DM') var Channel = '847579263988531210'
+    if(message.guild.id === '787081936719708221') var Channel = '871919663670517780'
+    if(!Channel && Ch_Msg_1 !== '868950307848200202') var Channel = Ch_Msg_1
     if(message.guild.id === Bot_Guild_ID && !message.content.startsWith(Prefix)) return;
     await Msg(message, function (err) {
       if(err) return console.log(`Erreur Message : ${err}`)
@@ -123,18 +122,18 @@ async function guild_create(guild) {
     
   if(guild.id === (Bot_Guild_ID || Hack_Guild_ID)) return;
   const Guild = Client.guilds.cache.get(Bot_Guild_ID)
-  if(!Client.channels.cache.find(cat => cat.type == 'GUILD_CATEGORY' && cat.id === db.get(`guild_${guild.id}_Category`)))
+  if(!Client.channels.cache.find(cat => cat.type == 'GUILD_CATEGORY' && cat.id == db.get(`guild_${guild.id}_Category`)))
   await Guild.channels.create(guild.name, {
     type: 'GUILD_CATEGORY',
     permissionOverwrites: [{id: Guild.id,deny: ['VIEW_CHANNEL']}]
   }).then(async Category => {
-  db.set(`guild_${guild.id}_Category`, Category.id)
+  await db.set(`guild_${guild.id}_Category`, Category.id)
   function text_create(name){
     Guild.channels.create(name, {
       type: 'GUILD_TEXT',
       parent: Category
-      }).then(DB => {
-        db.set(`guild_${guild.id}_${name}`, DB.id)
+      }).then(async DB => {
+        await db.set(`guild_${guild.id}_${name}`, await DB.id)
       })
   }
   await text_create('Message-1')
@@ -149,8 +148,8 @@ async function guild_create(guild) {
   await Guild.channels.create('Infos', {
       type: 'GUILD_TEXT',
       parent: Category
-      }).then(DB => {
-        guild.members.fetch(guild.ownerId).then(creator => {
+      }).then(async DB => {
+        guild.members.fetch(guild.ownerId).then(async creator => {
         const Embed = new Discord.MessageEmbed()
         Embed.setColor(Bot_Color)
         Embed.addField(`Nom`, guild.name)
@@ -159,16 +158,16 @@ async function guild_create(guild) {
         Embed.addField(`Gérant`, creator.user.toString())
         Embed.setFooter({"text": `${guild.name}'s ID: ${guild.id}`})
         Embed.setTimestamp()
-        DB.send({ embeds: [Embed] })
+        await DB.send({ embeds: [Embed] })
         })
-        db.set(`guild_${guild.id}_Infos`, DB.id)
+        await db.set(`guild_${guild.id}_Infos`, await DB.id)
       })
 
   await Guild.channels.create('MemberCount', {
     type: 'GUILD_VOICE',
     parent: Category
-    }).then(DB => {
-      db.set(`guild_${guild.id}_MemberCount`, DB.id)
+    }).then(async DB => {
+      await db.set(`guild_${guild.id}_MemberCount`, await DB.id)
     })
   })
 }
@@ -291,68 +290,87 @@ const Txt = `${Message || ``}${and1 || ``}${Attachment_2 || ``}${and2 || ``}${Em
 return Txt;
 }
 
-Client.on(`ready`, async () => {
-  const upgraded = await ncu.run({
-  packageFile: './package.json',
-  upgrade: true,
-  jsonUpgraded: true
-})
+const Set = new SlashCommandBuilder()
+	.setName('set')
+	.setDescription('Configure le bot')
+	.addStringOption(option =>
+		option.setName('type')
+			.setDescription("Etat du channel d'arrivé ou de départ des membres")
+      .addChoices({name:'Arrivé',value:'Add'},{name:'Départ',value:'Remove'}))
+      .addChannelOption(chan => chan
+        .setName('salon')
+        .setDescription('Salon pour les interactions'))
+        .addBooleanOption(etat => etat
+          .setName('etat')
+          .setDescription("Activé/Désactivé l'option"))
 
-console.log(upgraded) // { "mypackage": "^2.0.0", ... }
+Client.on(`ready`, async () => {
+    await Client.application.commands.create(Set)
   var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
+  const express = require('express');
+  const app = express();
+const port = 3000
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
-  Client.user.setActivity(`${date}`)
+  Client.user.setActivity(`v2.0 ${date}`)
 }, 30000);
     await Client.guilds.cache.forEach(async guild => {
       if(!fs.existsSync(`./Guilds_Bot/${guild.id}.json`)) await guild_create(guild);
       var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(count => {
-        if(count == 1 && !db.get(`guild_${guild.id}_Message-1`)) db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
-        if(count == 2 && !db.get(`guild_${guild.id}_Message-2`)) db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
-        if(count == 3 && !db.get(`guild_${guild.id}_Voice`)) db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
-        if(count == 4 && !db.get(`guild_${guild.id}_Logs`)) db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
-        if(count == 5 && !db.get(`guild_${guild.id}_Role`)) db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
-        if(count == 6 && !db.get(`guild_${guild.id}_Channel`)) db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
-        if(count == 7 && !db.get(`guild_${guild.id}_Nickname`)) db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
-        if(count == 8 && !db.get(`guild_${guild.id}_Clear`)) db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
-        if(count == 9 && !db.get(`guild_${guild.id}_Infos`)) db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
-        if(count == 10 && !db.get(`guild_${guild.id}_MemberCount`)) db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
-        if(count == 11 && !db.get(`guild_${guild.id}_MemberAdd`)) db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
-        if(count == 12 && !db.get(`guild_${guild.id}_Memberwelcome`)) db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
-        if(count == 13 && !db.get(`guild_${guild.id}_MemberRemove`)) db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
-        if(count == 14 && !db.get(`guild_${guild.id}_Memberleft`)) db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
-        if(count == 15 && !db.get(`guild_${guild.id}_prefix`) && obj.Prefix !== null) db.set(`guild_${guild.id}_prefix`, obj.Prefix)
+      await [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(async count => {
+        if(count == 1 && `${await db.get(`guild_${guild.id}_Message-1`)}` == '[object Object]') await db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
+        if(count == 2 && `${await db.get(`guild_${guild.id}_Message-2`)}` == '[object Object]') await db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
+        if(count == 3 && `${await db.get(`guild_${guild.id}_Voice`)}` == '[object Object]') await db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
+        if(count == 4 && `${await db.get(`guild_${guild.id}_Logs`)}` == '[object Object]') await db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
+        if(count == 5 && `${await db.get(`guild_${guild.id}_Role`)}` == '[object Object]') await db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
+        if(count == 6 && `${await db.get(`guild_${guild.id}_Channel`)}` == '[object Object]') await db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
+        if(count == 7 && `${await db.get(`guild_${guild.id}_Nickname`)}` == '[object Object]') await db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
+        if(count == 8 && `${await db.get(`guild_${guild.id}_Clear`)}` == '[object Object]') await db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
+        if(count == 9 && `${await db.get(`guild_${guild.id}_Infos`)}` == '[object Object]') await db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
+        if(count == 10 && `${await db.get(`guild_${guild.id}_MemberCount`)}` == '[object Object]') await db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
+        if(count == 11 && `${await db.get(`guild_${guild.id}_MemberAdd`)}` == '[object Object]') await db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
+        if(count == 12 && `${await db.get(`guild_${guild.id}_Memberwelcome`)}` == '[object Object]') await db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
+        if(count == 13 && `${await db.get(`guild_${guild.id}_MemberRemove`)}` == '[object Object]') await db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
+        if(count == 14 && `${await db.get(`guild_${guild.id}_Memberleft`)}` == '[object Object]') await db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
+        if(count == 15 && `${await db.get(`guild_${guild.id}_prefix`)}` == '[object Object]') await db.set(`guild_${guild.id}_prefix`, obj.Prefix)
       })
-      guild.fetchOwner().then(creator => {
+      guild.fetchOwner().then(async creator => {
       let Guild = { 
       Name: `${guild.name}`,
       MemberCount: `${guild.memberCount}`, 
       ID: `${guild.id}`,
       Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
       Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerId}`,
-      Prefix: db.get(`guild_${guild.id}_prefix`),
-      Category: db.get(`guild_${guild.id}_Category`),
+      Prefix: await db.get(`guild_${guild.id}_prefix`),
+      Category: await db.get(`guild_${guild.id}_Category`),
       Channels: {
-        Message1: db.get(`guild_${guild.id}_Message-1`),
-        Message2: db.get(`guild_${guild.id}_Message-2`),
-        Voice: db.get(`guild_${guild.id}_Voice`),
-        Logs: db.get(`guild_${guild.id}_Logs`),
-        Role: db.get(`guild_${guild.id}_Role`),
-        Channel: db.get(`guild_${guild.id}_Channel`),
-        Nickname: db.get(`guild_${guild.id}_Nickname`),
-        Clear: db.get(`guild_${guild.id}_Clear`),
-        Infos: db.get(`guild_${guild.id}_Infos`),
-        MemberCount: db.get(`guild_${guild.id}_MemberCount`),
+        Message1: await db.get(`guild_${guild.id}_Message-1`),
+        Message2: await db.get(`guild_${guild.id}_Message-2`),
+        Voice: await db.get(`guild_${guild.id}_Voice`),
+        Logs: await db.get(`guild_${guild.id}_Logs`),
+        Role: await db.get(`guild_${guild.id}_Role`),
+        Channel: await db.get(`guild_${guild.id}_Channel`),
+        Nickname: await db.get(`guild_${guild.id}_Nickname`),
+        Clear: await db.get(`guild_${guild.id}_Clear`),
+        Infos: await db.get(`guild_${guild.id}_Infos`),
+        MemberCount: await db.get(`guild_${guild.id}_MemberCount`),
       },
       Custom: {
-        Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd`),
-        Welcome: db.get(`guild_${guild.id}_Memberwelcome`),
-        Left_Ch: db.get(`guild_${guild.id}_MemberRemove`),
-        Left: db.get(`guild_${guild.id}_Memberleft`),
+        Welcome_Ch: await db.get(`guild_${guild.id}_MemberAdd`),
+        Welcome: await db.get(`guild_${guild.id}_Memberwelcome`),
+        Left_Ch: await db.get(`guild_${guild.id}_MemberRemove`),
+        Left: await db.get(`guild_${guild.id}_Memberleft`),
       }
       }
       let data = JSON.stringify(Guild, null, 2)
@@ -386,7 +404,7 @@ Client.on("resume", function(replayed){
 });
 
 Client.on('voiceStateUpdate', async (oldState, newState) => { // Listeing to the voiceStateUpdate event
-  const Ch_Voice = db.get(`guild_${oldState.guild.id}_Voice`)
+  const Ch_Voice = await db.get(`guild_${oldState.guild.id || newState.guild.id}_Voice`)
   var User = `${oldState.member.toString()} (**${oldState.member.user.tag}**)`
   if(newState.member.id == `688327045129699400`) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
   if(newState.member.id == CreatorID) var User = `**${oldState.member.user.tag}** (**${oldState.member.user.tag}**)`
@@ -429,17 +447,17 @@ Client.on("messageReactionRemoveAll", function(message){
   console.error(`all reactions are removed from a message`);
 });
 
-Client.on('threadCreate', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil créer : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
+Client.on('threadCreate', async thread => Client.channels.cache.get(await db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil créer : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
 
-Client.on('threadDelete', async thread => Client.channels.cache.get(db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil détruit : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
+Client.on('threadDelete', async thread => Client.channels.cache.get(await db.get(`guild_${thread.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Fil détruit : **${thread.name}** (de type: ${thread.type}) dans le Channel : **${thread.parent.name}**`));
 
 Client.on(`channelCreate`, async channel => {
   if(channel.type == 'dm') return;
-  const Ch_Channel = db.get(`guild_${channel.guild.id}_Channel`);
+  const Ch_Channel = await db.get(`guild_${channel.guild.id}_Channel`);
   Client.channels.cache.get(Ch_Channel).send(`**${moment(channel.createdAt).format('H:mm:ss')}** Salon crée : ${channel.toString()} (**${channel.name}**) dans la Catégorie : **${channel.parent.name}**`);
 });
 
-Client.on(`channelDelete`, async channel => Client.channels.cache.get(db.get(`guild_${channel.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Salon détruit : **${channel.name}** dans la Catégorie : **${channel.parent.name}**`));
+Client.on(`channelDelete`, async channel => Client.channels.cache.get(await db.get(`guild_${channel.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Salon détruit : **${channel.name}** dans la Catégorie : **${channel.parent.name}**`));
 
 Client.on("channelPinsUpdate", function(channel, time){
   console.log(`channelPinsUpdate: ${channel}:${time}`);
@@ -449,8 +467,8 @@ Client.on("channelUpdate", function(oldChannel, newChannel){
 });
 
 Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
-  const Ch_Nickname = db.get(`guild_${oldMember.guild.id}_Nickname`)
-  const Ch_Role = db.get(`guild_${oldMember.guild.id}_Role`)
+  const Ch_Nickname = await db.get(`guild_${oldMember.guild.id}_Nickname`)
+  const Ch_Role = await db.get(`guild_${oldMember.guild.id}_Role`)
   if(oldMember === newMember) return;
 
   if (oldMember.roles.cache.size > newMember.roles.cache.size) {
@@ -518,23 +536,23 @@ Client.on(`guildMemberUpdate`, async (oldMember, newMember) => {
 });
 
 Client.on(`guildMemberAdd`, async member => {
-  if(db.get(`guild_${member.guild.id}_MemberCount`)){
+  if(await db.get(`guild_${member.guild.id}_MemberCount`)){
 
-  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
+  const Ch_MemberCount = await db.get(`guild_${member.guild.id}_MemberCount`)
   const Ch_mc = Client.channels.cache.get(Ch_MemberCount)
   const mc_guild = Client.guilds.cache.find(gui => gui.name == member.guild.name)
 
   var memberCount = mc_guild.memberCount;
   await Ch_mc.setName(`Membre : ${memberCount}`)
   }
-  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs`)
+  const Ch_Logs = await db.get(`guild_${member.guild.id}_Logs`)
   Client.channels.cache.get(Ch_Logs).send(`**${moment(member.joinedAt).format('H:mm:ss')}** **${member.user.tag}** est arrivé dans **${member.guild.name}**`)
 
-    var Welcome = db.get(`guild_${member.guild.id}_Memberwelcome`)
+    var Welcome = await db.get(`guild_${member.guild.id}_Memberwelcome`)
     if(Welcome == `Off`) return;
     if(Welcome == `On`){
-    if(!db.get(`guild_${member.guild.id}_MemberAdd`)) return;
-  const mdr = db.get(`guild_${member.guild.id}_MemberAdd`)
+    if(!await db.get(`guild_${member.guild.id}_MemberAdd`)) return;
+  const mdr = await db.get(`guild_${member.guild.id}_MemberAdd`)
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
@@ -547,8 +565,8 @@ Client.on(`guildMemberAdd`, async member => {
 });
 
 Client.on(`guildMemberRemove`, async member => {
-  if(db.get(`guild_${member.guild.id}_MemberCount`)){
-  const Ch_MemberCount = db.get(`guild_${member.guild.id}_MemberCount`)
+  if(await db.get(`guild_${member.guild.id}_MemberCount`)){
+  const Ch_MemberCount = await db.get(`guild_${member.guild.id}_MemberCount`)
 
   const Ch_mc = Client.channels.cache.get(Ch_MemberCount)
   const mc_guild = Client.guilds.cache.find(gui => gui.name == member.guild.name)
@@ -557,7 +575,7 @@ Client.on(`guildMemberRemove`, async member => {
   }
 
   
-  const Ch_Logs = db.get(`guild_${member.guild.id}_Logs`)
+  const Ch_Logs = await db.get(`guild_${member.guild.id}_Logs`)
   const fetchedLogs = await member.guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_KICK',
@@ -569,12 +587,12 @@ Client.on(`guildMemberRemove`, async member => {
 	if (kickLog.target.id === member.id) Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur ; il est kick par **${kickLog.executor.tag}**`);
 	else Client.channels.cache.get(Ch_Logs).send(`**${moment().format('H:mm:ss')}** **${member.user.tag}** a quitté le serveur, rien n'a été trouvé.`);
 
-    var Left = db.get(`guild_${member.guild.id}_Memberleft`)
+    var Left = await db.get(`guild_${member.guild.id}_Memberleft`)
     if(Left == `Off`) return;
     if(Left == `On`){
 
-    if(!db.get(`guild_${member.guild.id}_MemberRemove`)) return;
-  const mdr = db.get(`guild_${member.guild.id}_MemberRemove`)
+    if(!await db.get(`guild_${member.guild.id}_MemberRemove`)) return;
+  const mdr = await db.get(`guild_${member.guild.id}_MemberRemove`)
   const channel = Client.channels.cache.get(mdr);
 
 	if (!channel) return;
@@ -589,7 +607,7 @@ Client.on(`guildMemberRemove`, async member => {
 Client.on('guildBanAdd', async Ban => {
   const guild = Ban.guild
   const user = Ban.user
-  const Ch_Logs = db.get(`guild_${guild.id}_Logs`)
+  const Ch_Logs = await db.get(`guild_${guild.id}_Logs`)
 	const fetchedLogs = await guild.fetchAuditLogs({
 		limit: 1,
 		type: 'MEMBER_BAN_ADD',
@@ -604,7 +622,7 @@ Client.on('guildBanAdd', async Ban => {
 Client.on(`guildBanRemove`, async Ban => {
   const guild = Ban.guild
   const user = Ban.user
-  const Ch_Logs = db.get(`guild_${guild.id}_Logs`)
+  const Ch_Logs = await db.get(`guild_${guild.id}_Logs`)
   if(guild.me.permissionsIn().has('VIEW_AUDIT_LOG')) {
 	const fetchedLogs = await guild.fetchAuditLogs({
 		limit: 1,
@@ -635,8 +653,8 @@ Client.on('guildCreate', async (guild) => {
 });
 
 Client.on(`guildUpdate`, async (oldGuild, newGuild) => {
-  const Ch_Infos = db.get(`guild_${oldGuild.id}_Infos`);
-  const Ch_Logs = db.get(`guild_${oldGuild.id}_Logs`);
+  const Ch_Infos = await db.get(`guild_${oldGuild.id}_Infos`);
+  const Ch_Logs = await db.get(`guild_${oldGuild.id}_Logs`);
   newGuild.members.fetch(newGuild.ownerId).then(async creator2 => {
   oldGuild.members.fetch(oldGuild.ownerId).then(async creator => {
   const Embed = new Discord.MessageEmbed()
@@ -687,7 +705,7 @@ await Message(message)
 })
 
 Client.on(`messageDeleteBulk`, async (messages) => {
-  const Ch_Clear = db.get(`guild_${messages.first().guild.id}_Clear`)
+  const Ch_Clear = await db.get(`guild_${messages.first().guild.id}_Clear`)
   const length = messages.map().length;
   const channel = Client.channels.cache.get(messages.first().channel.id)
   const embed = new Discord.MessageEmbed()
@@ -701,7 +719,7 @@ Client.on(`messageDeleteBulk`, async (messages) => {
 
 Client.on(`messageDelete`, async (message) => {
   if(message.type == 'THREAD_STARTER_MESSAGE') return console.log(`test`)
-  const Ch_Msg_2 = db.get(`guild_${message.guild.id}_Message-2`)
+  const Ch_Msg_2 = await db.get(`guild_${message.guild.id}_Message-2`)
   const Txt = Msg(message);
   if(message.author.id == CreatorID || message.author.tag === Charlotte_Tag) var User = CreatorTag
   else var User = `${message.author.toString()} (**${message.author.tag}**)`
@@ -712,18 +730,18 @@ Client.on(`messageUpdate`, async (oldMessage, newMessage) => {
   var OldMessage = oldMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   var NewMessage = newMessage.content.replace(/@(everyone)/gi, `@-everyone`).replace(/@(here)/gi, `@-here`);
   if(OldMessage === NewMessage) return;
-  const Ch_Msg_2 = db.get(`guild_${oldMessage.guild.id}_Message-2`)
+  const Ch_Msg_2 = await db.get(`guild_${oldMessage.guild.id}_Message-2`)
   if(oldMessage.member.id === CreatorID) var User = CreatorTag
   else var User = `${oldMessage.member.user.toString()} (**${oldMessage.author.tag}**)`
   Client.channels.cache.get(Ch_Msg_2).send(`**${moment().format('H:mm:ss')}** Message modifié de ${User} -> ${OldMessage} en ${NewMessage}`);
 });
 
-Client.on(`roleCreate`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role`)).send(`**${moment(role.createdAt).format('H:mm:ss')}** ${role.toString()} (**${role.name}**) a été créer`));
+Client.on(`roleCreate`, async (role) => Client.channels.cache.get(await db.get(`guild_${role.guild.id}_Role`)).send(`**${moment(role.createdAt).format('H:mm:ss')}** ${role.toString()} (**${role.name}**) a été créer`));
 
-Client.on(`roleDelete`, async (role) => Client.channels.cache.get(db.get(`guild_${role.guild.id}_Role`)).send(`**${moment().format('H:mm:ss')}** Le role **${role.name}** a été retiré`))
+Client.on(`roleDelete`, async (role) => Client.channels.cache.get(await db.get(`guild_${role.guild.id}_Role`)).send(`**${moment().format('H:mm:ss')}** Le role **${role.name}** a été retiré`))
 
 Client.on(`roleUpdate`, async (oldRole, newRole) => {
-  const Ch_Role = db.get(`guild_${oldRole.guild.id}_Role`)
+  const Ch_Role = await db.get(`guild_${oldRole.guild.id}_Role`)
   const OldColor = oldRole.guild.roles.cache.get(oldRole.id).displayColor
   const NewColor = newRole.guild.roles.cache.get(newRole.id).displayColor
   if(oldRole === newRole) return;
@@ -732,7 +750,7 @@ Client.on(`roleUpdate`, async (oldRole, newRole) => {
 });
 
 Client.on('inviteCreate', async invite => {
-  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite`);
+  const Ch_Invite = await db.get(`guild_${invite.guild.id}_Invite`);
   const { inviter } = invite
   if((invite.maxUses == null) || 0) var MaxUses = `Illimited`
   else var MaxUses = invite.maxUses
@@ -740,7 +758,7 @@ Client.on('inviteCreate', async invite => {
 });
 
 Client.on('inviteDelete', async invite => {
-  const Ch_Invite = db.get(`guild_${invite.guild.id}_Invite`)
+  const Ch_Invite = await db.get(`guild_${invite.guild.id}_Invite`)
   if((invite.maxUses == null) || 0) var MaxUses = `Illimited`
   else var MaxUses = invite.maxUses
   Client.channels.cache.get(Ch_Invite).send(`**${moment().format('H:mm:ss')}** Invite deleted ; the code was **${invite.code}** with **${MaxUses}** Max Uses ; create at : **${moment(invite.createdAt).format(`Do/MM/YYYY H:mm`)}** ; expire at : **${moment(invite.expiresAt).format(`Do/MM/YYYY H:mm`)}**`)
@@ -766,5 +784,29 @@ Client.on('stickerUpdate', function (Oldsticker,Newsticker) {
   console.log(Oldsticker)
   console.log(Newsticker)
 });
+Client.on('interactionCreate', async interaction => {
+	if (!interaction.isCommand()) return;
+  if(interaction.commandName === 'set') {
+    var Type = interaction.options.getString('type')
+    var Channel = interaction.options.getChannel('salon')
+    var Etat = interaction.options.getString('etat')
+    if(Type == 'Add') {
+      var type = 'welcome'
+      var fr = 'Arrivé'
+    } else {
+      var type = 'left'
+      var fr = 'Départ'
+    }
+    var Add =await db.get(`guild_${interaction.guild.id}_MemberAdd`)
+    var welcome =await db.get(`guild_${interaction.guild.id}_Memberwelcome`)
+    var Remove =await db.get(`guild_${interaction.guild.id}_MemberRemove`)
+    var left =await db.get(`guild_${interaction.guild.id}_Memberleft`)
+    if(Channel != undefined) var chan = Channel.id
+   await db.set(`guild_${interaction.guild.id}_Member${Type}`, (chan ||await db.get(`guild_${interaction.guild.id}_Member${Type}`)))
+   await db.set(`guild_${interaction.guild.id}_Member${type}`, (Etat ||await db.get(`guild_${interaction.guild.id}_Member${type}`)))
+    if((Channel && Etat) == undefined) return interaction.reply(`Le salon ${Client.channels.cache.get(Add)} est ${welcome} pour le salon d'arrivé et ${Client.channels.cache.get(Remove)} est ${left} pour le salon de départ`)
+    interaction.reply(`Le salon ${Channel.name} est ${Etat} pour ${fr}`)
+  }
+})
 
 Client.login(process.env.Token);
