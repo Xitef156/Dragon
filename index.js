@@ -1,15 +1,13 @@
 const Discord = require('discord.js');const Voice = require('@discordjs/voice');const {SlashCommandBuilder} = require('@discordjs/builders');
-require('sodium');require('opusscript');require('libsodium-wrappers');require('tweetnacl');
 const ytSearch = require('yt-search');
 const weather = require('weather-js');
-const Quick = require('quick.db');
+const {QuickDB} = require('quick.db');
 require('better-sqlite3');
-const db = new Quick.QuickDB();
+const db = new QuickDB();
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
-const ytdl = require('ytdl-core');
-const express = require('express')
+const ytdl = require('ytdl-core')
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -71,12 +69,13 @@ Audio(Song)
   await connection.subscribe(player);
   await player.play(STREAM)
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    if(db.get(`guild_${channel.guild}_Music_Looping`) == true) return play(channel.guild);
+    var Loop = await db.get(`guild_${channel.guild}_Music_Looping`)
+    if(Loop == true) return play(channel, guild);
     await Songs.shift();
     if(!Songs[0]) {
       connection.destroy();
       queue.delete(channel.guild);
-    } else play(channel);
+    } else Audio(Songs[0]);
     })
   }
 }
@@ -133,20 +132,6 @@ async function Unban(member,guild,ms,user,now){
   Client.users.cache.get(user).send(`<@${member.user.id}> que vous avez banni sur ${G.name} le ${now} a été débanni`)
 
 }
-
-const Set = new SlashCommandBuilder()
-	.setName('set')
-	.setDescription('Configure le bot')
-	.addStringOption(option =>
-		option.setName('type')
-			.setDescription("Etat du channel d'arrivé ou de départ des membres")
-      .addChoices({name:'Arrivé',value:'Add'},{name:'Départ',value:'Remove'}))
-      .addChannelOption(chan => chan
-        .setName('salon')
-        .setDescription('Salon pour les interactions'))
-        .addStringOption(etat => etat
-          .setName('etat')
-          .setDescription("Activé/Désactivé l'option"))
 
 const Weather = new SlashCommandBuilder()
 .setName('weather')
@@ -317,6 +302,19 @@ const Play = new SlashCommandBuilder()
     .setDescription('Mot-clés de la recherche')
     .setRequired(true))
 
+const Support = new SlashCommandBuilder()
+.setName('support')
+.setDescription('Envoie à mon créateur un problème ou une idée sur mon fonctionnement')
+.addStringOption(type => type
+  .setName('type')
+  .setDescription('Une idée ou un problème')
+  .addChoices({name: 'Idée', value:'Idée'},{name:'Problème',value:'Problème'})
+  .setRequired(true))
+  .addStringOption(msg => msg
+    .setName('message')
+    .setDescription('Message à transmettre')
+    .setRequired(true))
+
 Client.on(`ready`, async () => {
   const express = require('express');
   const app = express();
@@ -335,7 +333,6 @@ app.listen(port, () => {
   console.log('Coucou')
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   try {
-    await Client.application.commands.create(Set)
     await Client.application.commands.create(Weather)
     await Client.application.commands.create(Maths)
     await Client.application.commands.create(Link)
@@ -352,6 +349,7 @@ app.listen(port, () => {
     await Client.application.commands.create(Volume)
     await Client.application.commands.create(Search)
     await Client.application.commands.create(Play)
+    await Client.application.commands.create(Support)
     console.log('Commandes installés')
   }catch(e) {
     console.log('Erreur')
@@ -359,53 +357,53 @@ app.listen(port, () => {
   }
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
-  Client.user.setActivity(`v2.0 ${date}`)
+  Client.user.setActivity(`${date}`)
 }, 30000);
 await Client.guilds.cache.forEach(async guild => {
   var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
-  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(async (count) => {
-    if(count == 1 && !db.get(`guild_${guild.id}_Message-1`))await db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
-    if(count == 2 && !db.get(`guild_${guild.id}_Message-2`))await db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
-    if(count == 3 && !db.get(`guild_${guild.id}_Voice`))await db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
-    if(count == 4 && !db.get(`guild_${guild.id}_Logs`))await db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
-    if(count == 5 && !db.get(`guild_${guild.id}_Role`))await db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
-    if(count == 6 && !db.get(`guild_${guild.id}_Channel`))await db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
-    if(count == 7 && !db.get(`guild_${guild.id}_Nickname`))await db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
-    if(count == 8 && !db.get(`guild_${guild.id}_Clear`))await db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
-    if(count == 9 && !db.get(`guild_${guild.id}_Infos`))await db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
-    if(count == 10 && !db.get(`guild_${guild.id}_MemberCount`))await db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
-    if(count == 11 && !db.get(`guild_${guild.id}_MemberAdd`))await db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
-    if(count == 12 && !db.get(`guild_${guild.id}_Memberwelcome`))await db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
-    if(count == 13 && !db.get(`guild_${guild.id}_MemberRemove`))await db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
-    if(count == 14 && !db.get(`guild_${guild.id}_Memberleft`))await db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
-    if(count == 15 && !db.get(`guild_${guild.id}_prefix`) && obj.Prefix !== (null || '{}'))await db.set(`guild_${guild.id}_prefix`, obj.Prefix)
+  await [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].forEach(async (count) => {
+    if(count == 1 && await db.get(`guild_${guild.id}_Message-1`) == undefined)await db.set(`guild_${guild.id}_Message-1`, obj.Channels.Message1)
+    if(count == 2 && await db.get(`guild_${guild.id}_Message-2`) == undefined)await db.set(`guild_${guild.id}_Message-2`, obj.Channels.Message2)
+    if(count == 3 && await db.get(`guild_${guild.id}_Voice`) == undefined)await db.set(`guild_${guild.id}_Voice`, obj.Channels.Voice)
+    if(count == 4 && await db.get(`guild_${guild.id}_Logs`) == undefined)await db.set(`guild_${guild.id}_Logs`, obj.Channels.Logs)
+    if(count == 5 && await db.get(`guild_${guild.id}_Role`) == undefined)await db.set(`guild_${guild.id}_Role`, obj.Channels.Role)
+    if(count == 6 && await db.get(`guild_${guild.id}_Channel`) == undefined)await db.set(`guild_${guild.id}_Channel`, obj.Channels.Channel)
+    if(count == 7 && await db.get(`guild_${guild.id}_Nickname`) == undefined)await db.set(`guild_${guild.id}_Nickname`, obj.Channels.Nickname)
+    if(count == 8 && await db.get(`guild_${guild.id}_Clear`) == undefined)await db.set(`guild_${guild.id}_Clear`, obj.Channels.Clear)
+    if(count == 9 && await db.get(`guild_${guild.id}_Infos`) == undefined)await db.set(`guild_${guild.id}_Infos`, obj.Channels.Infos)
+    if(count == 10 && await db.get(`guild_${guild.id}_MemberCount`) == undefined)await db.set(`guild_${guild.id}_MemberCount`, obj.Channels.MemberCount)
+    if(count == 11 && await db.get(`guild_${guild.id}_MemberAdd`) == undefined)await db.set(`guild_${guild.id}_MemberAdd`, obj.Custom.Welcome_Ch)
+    if(count == 12 && await db.get(`guild_${guild.id}_Memberwelcome`) == undefined)await db.set(`guild_${guild.id}_Memberwelcome`, obj.Custom.Welcome)
+    if(count == 13 && await db.get(`guild_${guild.id}_MemberRemove`) == undefined)await db.set(`guild_${guild.id}_MemberRemove`, obj.Custom.Left_Ch)
+    if(count == 14 && await db.get(`guild_${guild.id}_Memberleft`) == undefined)await db.set(`guild_${guild.id}_Memberleft`, obj.Custom.Left)
+    if(count == 15 && await db.get(`guild_${guild.id}_prefix`) == undefined)await db.set(`guild_${guild.id}_prefix`, obj.Prefix)
   })
-  guild.fetchOwner().then(creator => {
+  guild.fetchOwner().then(async creator => {
   let Guild = { 
   Name: `${guild.name}`,
   MemberCount: `${guild.memberCount}`, 
   ID: `${guild.id}`,
   Logo: `${guild.iconURL({ dynamic: true, size: 4096})}`,
   Owner: `Tag : ${creator.user.tag} ; ID : ${guild.ownerId}`,
-  Prefix: db.get(`guild_${guild.id}_prefix`),
-  Category: db.get(`guild_${guild.id}_Category`),
+  Prefix: await db.get(`guild_${guild.id}_prefix`),
+  Category: await db.get(`guild_${guild.id}_Category`),
   Channels: {
-    Message1: db.get(`guild_${guild.id}_Message-1`),
-    Message2: db.get(`guild_${guild.id}_Message-2`),
-    Voice: db.get(`guild_${guild.id}_Voice`),
-    Logs: db.get(`guild_${guild.id}_Logs`),
-    Role: db.get(`guild_${guild.id}_Role`),
-    Channel: db.get(`guild_${guild.id}_Channel`),
-    Nickname: db.get(`guild_${guild.id}_Nickname`),
-    Clear: db.get(`guild_${guild.id}_Clear`),
-    Infos: db.get(`guild_${guild.id}_Infos`),
-    MemberCount: db.get(`guild_${guild.id}_MemberCount`),
+    Message1: await db.get(`guild_${guild.id}_Message-1`),
+    Message2: await db.get(`guild_${guild.id}_Message-2`),
+    Voice: await db.get(`guild_${guild.id}_Voice`),
+    Logs: await db.get(`guild_${guild.id}_Logs`),
+    Role: await db.get(`guild_${guild.id}_Role`),
+    Channel: await db.get(`guild_${guild.id}_Channel`),
+    Nickname: await db.get(`guild_${guild.id}_Nickname`),
+    Clear: await db.get(`guild_${guild.id}_Clear`),
+    Infos: await db.get(`guild_${guild.id}_Infos`),
+    MemberCount: await db.get(`guild_${guild.id}_MemberCount`),
   },
   Custom: {
-    Welcome_Ch: db.get(`guild_${guild.id}_MemberAdd`),
-    Welcome: db.get(`guild_${guild.id}_Memberwelcome`),
-    Left_Ch: db.get(`guild_${guild.id}_MemberRemove`),
-    Left: db.get(`guild_${guild.id}_Memberleft`),
+    Welcome_Ch: await db.get(`guild_${guild.id}_MemberAdd`),
+    Welcome: await db.get(`guild_${guild.id}_Memberwelcome`),
+    Left_Ch: await db.get(`guild_${guild.id}_MemberRemove`),
+    Left: await db.get(`guild_${guild.id}_Memberleft`),
   }
   }
   let data = JSON.stringify(Guild, null, 2)
@@ -420,28 +418,6 @@ db.set(`guild_787081936719708221_prefix`, ",")
 });
 
 Client.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-  if(interaction.commandName === 'set') {
-    var Type = interaction.options.getString('type')
-    var Channel = interaction.options.getChannel('salon')
-    var Etat = interaction.options.getString('etat')
-    if(Type == 'Add') {
-      var type = 'welcome'
-      var fr = 'Arrivé'
-    } else {
-      var type = 'left'
-      var fr = 'Départ'
-    }
-    var Add =await db.get(`guild_${interaction.guild.id}_MemberAdd`)
-    var welcome =await db.get(`guild_${interaction.guild.id}_Memberwelcome`)
-    var Remove =await db.get(`guild_${interaction.guild.id}_MemberRemove`)
-    var left =await db.get(`guild_${interaction.guild.id}_Memberleft`)
-    if(Channel != undefined) var chan = Channel.id
-   await db.set(`guild_${interaction.guild.id}_Member${Type}`, (chan ||await db.get(`guild_${interaction.guild.id}_Member${Type}`)))
-   await db.set(`guild_${interaction.guild.id}_Member${type}`, (Etat ||await db.get(`guild_${interaction.guild.id}_Member${type}`)))
-    if((Channel && Etat) == undefined) return interaction.reply(`Le salon ${Client.channels.cache.get(Add)} est ${welcome} pour le salon d'arrivé et ${Client.channels.cache.get(Remove)} est ${left} pour le salon de départ`)
-    interaction.reply(`Le salon ${Channel.name} est ${Etat} pour ${fr}`)
-  }
   if(interaction.commandName === 'weather'){
     const city = interaction.options.data[0].value
     const country = interaction.options.data[1].value
@@ -452,7 +428,7 @@ Client.on('interactionCreate', async interaction => {
       if (result === undefined || result.length === 0) return interaction.reply(`Vous n'avez pas spécifié de lieu valide`)
       let current = result[0].current
       let location = result[0].location
-      const embed = new Discord.interactionEmbed()
+      const embed = new Discord.MessageEmbed()
       .setTitle(`Affichage des informations météo pour ${current.observationpoint}`)
       .setDescription(current.skytext)
       .setThumbnail(current.imageUrl)
@@ -506,7 +482,7 @@ if(interaction.commandName === 'role') {
   if(Desc.length !== Id.length) return interaction.reply(`Il n'y a pas le même nombre de rôle que de description`)
   Id.forEach(role => { if(isNaN(role)) return interaction.reply(`Il y a des rôles qui ne sont pas des id`) })
   Emoji.forEach(emo => { if(emo.startsWith(`:`)) return interaction.reply(`Il y a des émojis qui commence pas par :`) })
-  const Embed = new Discord.interactionEmbed()
+  const Embed = new Discord.MessageEmbed()
   .setColor(Bot_Color)
   .setTimestamp()
   Id.forEach(role => { if(!interaction.guild.roles.fetch(role)) return interaction.reply(`${role} est inconnu`) })
@@ -644,7 +620,7 @@ if(interaction.commandName === 'skip') {
 if(interaction.commandName === 'queue') {
   var Songs = queue.get(interaction.guild.id);
 if(!Songs) return interaction.reply(`Il y a rien a voir`)
-const Queue = new Discord.interactionEmbed()
+const Queue = new Discord.MessageEmbed()
 .setColor(`#00ffff`)
 .setTitle(`Queue de ${interaction.guild.name}`)
 await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
@@ -652,14 +628,14 @@ await interaction.reply({ embeds: [Queue]})
 }
 if(interaction.commandName === 'loop') {
   var act = interaction.options.getBoolean('etat')
-  if(act == undefined) return interaction.reply(`L'état de la boucle est ${db.get(`guild_${interaction.guild.id}_Music_Looping`)}`)
-  if(act.length > 3) var De = 'Désactivation'
+  if(act == undefined) return interaction.reply(`L'état de la boucle est ${await db.get(`guild_${interaction.guild.id}_Music_Looping`)}`)
+  if(act == false) var De = 'Désactivation'
  await db.set(`guild_${interaction.guild.id}_Music_Looping`, act)
   interaction.reply(`${De || 'Activation'} de la boucle`)
 }
 if(interaction.commandName === 'volume') {
   var nmb = interaction.options.getNumber('nombre')
-  if(!nmb) return interaction.reply(`Le volume du serveur est à ${db.get(`guild_${interaction.guild.id}_Volume`) * 10}`)
+  if(!nmb) return interaction.reply(`Le volume du serveur est à ${await db.get(`guild_${interaction.guild.id}_Volume`) * 10}`)
  await db.set(`guild_${interaction.guild.id}_Volume`, nmb / 10)
   interaction.reply(`Le volume est maintenant de ${nmb}`)
 }
@@ -675,7 +651,7 @@ if(interaction.commandName === 'search') {
       if(!songs[0]) return interaction.reply(`Rien trouvé`)
       await songs.forEach(async (Song,index) => {
         await SC.getSongInfo(Song.url).then(async song => {
-  const Search2 = new Discord.interactionEmbed()
+  const Search2 = new Discord.MessageEmbed()
   .setColor(Bot_Color)
   .setImage(song.thumbnail)
   .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
@@ -689,7 +665,7 @@ if(interaction.commandName === 'search') {
   var Video = await ytSearch({ search: Search })
   var videos = Video.videos.slice( 0, result )
   videos.forEach(async (video, index) => {
-  const YTB = new Discord.interactionEmbed()
+  const YTB = new Discord.MessageEmbed()
   .setColor(Bot_Color)
   .setImage(video.image)
   .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
@@ -717,7 +693,7 @@ if(interaction.commandName === 'play') {
   if(Type === 'SoundCloud'){
     await interaction.reply(`Recherche de **${Query}** sur Soundcloud`)
       const song = await songFinder(Query)
-            const New = new Discord.interactionEmbed()
+            const New = new Discord.MessageEmbed()
             if(!song) return interaction.reply(`Rien trouvée`)
             var SONG = {
               type: 'sc',
@@ -789,6 +765,12 @@ if(interaction.commandName === 'play') {
                  }
                 }
 }
+if(interaction.commandName === 'support') {
+  var Type = interaction.options.getString('type')
+  var Msg = interaction.options.getString('message')
+  await Client.users.cache.get('776140752752869398').send(`${Type} de la part de <@${interaction.member.user.id}> sur ${interaction.guild.name} : \n\n${Msg}`)
+  interaction.reply('Votre message a bien été envoyé, veuillez patientez')
+}
 });
-const mySecret = process.env['TOKEN']
-Client.login(mySecret)
+
+Client.login(process.env.TOKEN)
