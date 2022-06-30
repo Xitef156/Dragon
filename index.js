@@ -24,9 +24,7 @@ const Client = new Discord.Client({ intents: [
   Instent.GUILD_BANS,
   Instent.GUILD_EMOJIS_AND_STICKERS,
   Instent.GUILD_INVITES,
-  Instent.GUILD_INTEGRATIONS,
   Instent.GUILD_WEBHOOKS,
-  Instent.GUILD_SCHEDULED_EVENTS,
   Instent.GUILD_PRESENCES
 ],
 makeCache: Discord.Options.cacheWithLimits({
@@ -35,9 +33,9 @@ makeCache: Discord.Options.cacheWithLimits({
 }), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
 });
 
+const emb = new Discord.MessageEmbed()
 const queue = new Map();
-const React = new Map();
-const player = Voice.createAudioPlayer();
+const player = Voice.createAudioPlayer().setMaxListeners(30)
 
 const Bot_Color = `#42ff00`
 const Ch_Err = '834751451090911292'
@@ -47,7 +45,7 @@ async function play(channel, guild){
   var Songs = await queue.get(guild.id)
   var Song = await Songs[0];
   if (!Song) {
-    connection.destroy();
+      connection.disconnect();
     queue.delete(guild);
     return;
   }
@@ -58,24 +56,26 @@ async function play(channel, guild){
   })
 }
   else {
-    var Stream = await ytdl(song.url,{filter : 'audioonly', quality: 'highest', highWaterMark: 1<<25})
+    var Stream = await ytdl(song.url,{filter : 'audioonly', quality:'highestaudio', highWaterMark: 1<<25})
     await Play(Stream)
   }
 }
 Audio(Song)
   async function Play(stream){
     var connection = await Voice.getVoiceConnection(guild.id)
-  var STREAM = await Voice.createAudioResource(stream)
-  await connection.subscribe(player);
+  var STREAM = await Voice.createAudioResource(stream, {inputType: Voice.StreamType.Arbitrary})
   await player.play(STREAM)
+  player.on('error',() => Audio(Song))
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
     var Loop = await db.get(`guild_${channel.guild}_Music_Looping`)
     if(Loop == true) return play(channel, guild);
-    await Songs.shift();
-    if(!Songs[0]) {
-      connection.destroy();
-      queue.delete(channel.guild);
+    else {
+      await Songs.shift();
+    if(Songs[0] == undefined) {
+      connection.disconnect();
+      queue.delete(guild.id);
     } else Audio(Songs[0]);
+  }
     })
   }
 }
@@ -133,6 +133,18 @@ async function Unban(member,guild,ms,user,now){
 
 }
 
+async function sep_seconds(totalSeconds) {
+  hours = Math.floor(totalSeconds / 3600);
+  totalSeconds %= 3600;
+  minutes = Math.floor(totalSeconds / 60);
+  seconds = totalSeconds % 60;
+  return {
+    Hours : hours,
+    Minutes: minutes,
+    Seconds: seconds
+  }
+}
+
 const Weather = new SlashCommandBuilder()
 .setName('weather')
 .setDescription("Indique la météo d'une ville")
@@ -167,31 +179,6 @@ const Link = new SlashCommandBuilder()
 .setName('link')
 .setDescription('Vous envoie le lien du bot')
 
-const Role = new SlashCommandBuilder()
-.setName('role')
-.setDescription('Ajoute un rôle par Embed')
-.addStringOption(role => role
-  .setName('desc')
-  .setDescription("Description des rôles (description_role1 ; description_role2 ; description_role3 ; ...)")
-  .setRequired(true))
-  .addStringOption(id => id
-    .setName('ids')
-    .setDescription('Mets les ids (id_role1 ; id_role2 ; is_role3 ; ...)')
-    .setRequired(true))
-    .addStringOption(emoji => emoji
-      .setName('emoji')
-      .setDescription('Emoji de réaction (emoji_role_1 ; emoji_role_2 ; emoji_role_3 ; ...)')
-      .setRequired(true))
-      .addStringOption(title => title
-        .setName('titre')
-        .setDescription('Met un titre'))
-        .addStringOption(desc => desc
-          .setName('description')
-          .setDescription('Ajoute une description'))
-          .addStringOption(thumb => thumb
-            .setName('miniature')
-            .setDescription("Met un lien d'une image"))
-
 const List = new SlashCommandBuilder()
 .setName('list')
 .setDescription('Donne la liste')
@@ -215,7 +202,6 @@ const Say = new SlashCommandBuilder()
 const TempBan = new SlashCommandBuilder()
 .setName('tempban')
 .setDescription('Ban temporairement un membre')
-.setDefaultPermission(false)
 .addUserOption( user => user
   .setName('membre')
   .setDescription('Les membre a bannir')
@@ -316,6 +302,10 @@ const Support = new SlashCommandBuilder()
     .setRequired(true))
 
 Client.on(`ready`, async () => {
+  var dir = './Guilds_Bot';
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  console.log(`Coucou ${process.version}`)
+  console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   const express = require('express');
   const app = express();
 const port = 3000
@@ -327,16 +317,10 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
-  var dir = './Guilds_Bot';
-  var Perm = Discord.Permissions.FLAGS
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-  console.log('Coucou')
-  console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   try {
     await Client.application.commands.create(Weather)
     await Client.application.commands.create(Maths)
     await Client.application.commands.create(Link)
-    await Client.application.commands.create(Role)
     await Client.application.commands.create(List)
     await Client.application.commands.create(Say)
     await Client.application.commands.create(TempBan)
@@ -357,7 +341,7 @@ app.listen(port, () => {
   }
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
-  Client.user.setActivity(`${date}`)
+  Client.user.setActivity(`v2.0 ${date}`)
 }, 30000);
 await Client.guilds.cache.forEach(async guild => {
   var obj = JSON.parse(fs.readFileSync(`./Guilds_Bot/${guild.id}.json`));
@@ -410,7 +394,6 @@ await Client.guilds.cache.forEach(async guild => {
   fs.writeFileSync(`./Guilds_Bot/${guild.id}.json`, data);
 })
 })
-db.set(`guild_787081936719708221_prefix`, ",")
 	process.on('uncaughtException', error => {
   Client.channels.cache.get(Ch_Err).send(`**${moment().format('H:mm:ss')}** Erreur : ${error}`)
   console.log(error)
@@ -418,14 +401,22 @@ db.set(`guild_787081936719708221_prefix`, ",")
 });
 
 Client.on('interactionCreate', async interaction => {
+  async function Embed(content) {
+  await emb.setTitle(content)
+  await emb.setColor(Bot_Color)
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [emb],fetchReply: true})
+  else return await interaction.reply({embeds: [emb],fetchReply: true})
+}
+  if(!interaction.isCommand()) return
+  if(interaction.member == null && interaction.commandName !== ('link' || 'weather' || 'maths' || 'say' || 'support')) return Embed("Pas de commandes en DM (sauf /link ; /weather ; /maths ; /say et /support), invite moi sur un serveur d'abord")
   if(interaction.commandName === 'weather'){
     const city = interaction.options.data[0].value
     const country = interaction.options.data[1].value
     weather.find({search: `${city}, ${country}`, degreeType: `C`}, function(error, result){
-      if (error) return interaction.reply(error)
+      if (error) return Embed(error)
       if (error) return Client.channels.cache.get(Ch_Err).send(`Erreur de la commande *weather* : **${error}**`)
-      if (!city) return interaction.reply(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
-      if (result === undefined || result.length === 0) return interaction.reply(`Vous n'avez pas spécifié de lieu valide`)
+      if (!city) return Embed(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
+      if (result === undefined || result.length === 0) return Embed(`Vous n'avez pas spécifié de lieu valide`)
       let current = result[0].current
       let location = result[0].location
       const embed = new Discord.MessageEmbed()
@@ -438,7 +429,8 @@ Client.on('interactionCreate', async interaction => {
       .addField(`Vitesse du vent : `, current.winddisplay, true)
       .addField(`Humidité : `, `${current.humidity}%`, true)
       .addField(`Timezone : `, `UTC${location.timezone}`, true)
-      interaction.reply({ embeds: [embed]})
+      if(interaction.replied == true) return await interaction.channel.send({embeds: [embed],fetchReply: true})
+      else return await interaction.reply({embeds: [embed],fetchReply: true})
   })
 }
 if(interaction.commandName === 'maths') {
@@ -450,8 +442,8 @@ if(interaction.commandName === 'maths') {
   let parseNo2 = parseInt(no2)
   let xD = `Vous devez entrer l'opération et les opérandes à côté de la commande comme : `
   let ans
-  if (!op) return interaction.reply(`${xD}\`,maths 1 + 2\``)
-  if (!args[0] || !args[2]) return interaction.reply(`${xD}\`,maths 1 ${args[1]} 2\``)
+  if (!op) return Embed(`${xD}\`,maths 1 + 2\``)
+  if (!args[0] || !args[2]) return Embed(`${xD}\`,maths 1 ${args[1]} 2\``)
     if (op === `+`) ans = parseNo1 + parseNo2
     else if (op === `-`) ans = parseNo1 - parseNo2
     else if (op === `*`) ans = parseNo1 * parseNo2
@@ -460,65 +452,19 @@ if(interaction.commandName === 'maths') {
     else if (op === `pow`) ans = Math.pow(parseNo1, parseNo2)
     else if (op === `root`) ans = Math.pow(parseNo1, 1/parseNo2)
     setTimeout(function () {
-      interaction.reply(`Réponse : ` + ans)
+      Embed(`Réponse : ` + ans)
   }, 25)
 }
 if(interaction.commandName === 'link') {
   var Perm = Discord.Permissions.FLAGS
-  interaction.reply(
-  Client.generateInvite({ scopes: ['bot'], permissions: [Perm.ADMINISTRATOR, Perm.VIEW_AUDIT_LOG, Perm.KICK_MEMBERS, Perm.BAN_MEMBERS, Perm.SEND_MESSAGES, Perm.MANAGE_NICKNAMES, Perm.MANAGE_CHANNELS, Perm.MANAGE_MESSAGES, Perm.MANAGE_ROLES, Perm.MANAGE_GUILD, Perm.MENTION_EVERYONE]
-  }))
-}
-if(interaction.commandName === 'role') {
-  const str = interaction.options.data
-  const Desc = interaction.options.getString('desc').split(` ; `)
-  const Id = interaction.options.getString('ids').split(` ; `)
-  const Emoji = interaction.options.getString('emoji').split(` ; `)
-  const Title = interaction.options.getString('titre')
-  const Descript = interaction.options.getString('description')
-  const Thumb = interaction.options.getString('miniature')
-  if(Id.length !== Emoji.length) return interaction.reply(`Il n'y a pas le même nombre de rôle que d'émojis`)
-  if(Desc.length !== Emoji.length) return interaction.reply(`Il n'y a pas le même nombre d'émojis que de description`)
-  if(Desc.length !== Id.length) return interaction.reply(`Il n'y a pas le même nombre de rôle que de description`)
-  Id.forEach(role => { if(isNaN(role)) return interaction.reply(`Il y a des rôles qui ne sont pas des id`) })
-  Emoji.forEach(emo => { if(emo.startsWith(`:`)) return interaction.reply(`Il y a des émojis qui commence pas par :`) })
-  const Embed = new Discord.MessageEmbed()
-  .setColor(Bot_Color)
-  .setTimestamp()
-  Id.forEach(role => { if(!interaction.guild.roles.fetch(role)) return interaction.reply(`${role} est inconnu`) })
-  if(Title != undefined) Embed.setTitle(Title)
-  if(Descript != undefined) Embed.setDescription(Descript)
-  if(Thumb != undefined) Embed.setThumbnail(Thumb || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`)
-  await Id.forEach(async (Role,index) => {
-    var desc = Desc[index]
-    var emo = Emoji[index]
-    var role = await interaction.guild.roles.cache.find(ID => ID.id == Role)
-    Embed.addField(`${emo} ${role.name}`, desc)
-  })
-  Reaction()
-  async function Reaction() {
-    await interaction.reply('Pong!');
-  await interaction.deleteReply();
-    interaction.channel.send({embeds: [Embed]}).then(async msg => {
-      Emoji.forEach(emo => msg.react(emo));
-      var List_react = React.get(interaction.guild.id)
-      var react = {
-        interaction: msg,
-        emojis: Emoji,
-        roles: Id
-      }
-      if(!List_react){
-        var List = [];
-        React.set(interaction.guild.id, List)
-        List.push(react)
-      } else List_react.push(react)
-})
-  }
+  Embed(
+  `${Client.generateInvite({ scopes: ['bot'], permissions: [Perm.ADMINISTRATOR, Perm.VIEW_AUDIT_LOG, Perm.BAN_MEMBERS, Perm.SEND_MESSAGES, Perm.MANAGE_MESSAGES, Perm.MANAGE_ROLES, Perm.MENTION_EVERYONE]})}`
+  )
 }
 if(interaction.commandName === 'list') {
-  await interaction.reply('Ok')
+  await Embed('Ok')
   await interaction.deleteReply()
-  const Embed = new Discord.interactionEmbed
+  const Embed = new Discord.MessageEmbed()
   Embed.setColor(`#42ff00`)
     if(interaction.options.getString('type') === `role`){
       const Role_g = interaction.guild.roles.cache.map(role => `**${role.toString()}** ; **${role.name}** en **${role.position}** position`);
@@ -534,7 +480,7 @@ if(interaction.commandName === 'list') {
     }
 }
 if(interaction.commandName === 'say') {
-  await interaction.reply('Envoie..')
+  await Embed('Envoie..')
   await interaction.deleteReply()
   Client.channels.cache.get(interaction.options.getChannel('salon').id || interaction.channelId).send(interaction.options.getString('msg'))
 }
@@ -552,16 +498,16 @@ if(interaction.commandName === 'tempban') {
         var s = mins * 60
         var ms = s * 1000
         var finish = now.add({milliseconds:ms})
-        if(member == undefined)interaction.reply(`Membre non ou mal mentionné`);
+        if(member == undefined) Embed(`Membre non ou mal mentionné`);
         else {
             if(member.bannable && interaction.member.user.id != member.user.id){
                 member.ban({reason: `${reason || 'Aucune raison'}\n\n(Par Dragon Bot et ${interaction.member.user.tag})`})
-                Unban(member,interaction.guild.id,ms,interaction.member.user.id,NOW)
-                interaction.reply(`<@${member.user.id}> a été banni avec succès ; Il sera débanni le ${finish.format('lll')}`);
+                Unban(member,interaction.guildId,ms,interaction.member.user.id,NOW)
+                Embed(`<@${member.user.id}> a été banni avec succès ; Il sera débanni le ${finish.format('lll')}`);
             }
-            else interaction.reply(`Impossible de ban ce membre`);
+            else Embed(`Impossible de ban ce membre`);
         }
-} else interaction.reply("Tu n'es pas administrateur")
+} else Embed("Tu n'es pas administrateur")
 }
 if(interaction.commandName === 'clear') {
   var amount = parseInt(interaction.options.getNumber('nombre')); // Amount of interactions which should be deleted
@@ -570,12 +516,12 @@ if(interaction.commandName === 'clear') {
   if(interaction.member.user.id === '776140752752869398') var Reset = 1
   if(Author === interaction.guild.ownerId) var Reset = 1
   if(interaction.member.permissions.toArray().includes('ADMINISTRATOR')) var Reset = 1
-  if(Reset === 0) return interaction.reply(`Tu n\'es pas le chef du serveur`);
-    if(!amount) return interaction.reply('Vous n\'avez pas donné une quantité de interactions qui devraient être supprimés !') // Checks if the `amount` parameter is given
-    if(isNaN(amount)) return interaction.reply('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
-    if(amount > 100) return interaction.reply('Vous ne pouvez pas supprimer plus de 100 interactions à la fois !') // Checks if the `amount` integer is bigger than 100
-    if(1 > amount) return interaction.reply('Vous devez supprimer au moins 1 interaction !') // Checks if the `amount` integer is smaller than 1
-    await interaction.reply('Ok ça marche')
+  if(Reset === 0) return Embed(`Tu n\'es pas le chef du serveur`);
+    if(!amount) return Embed('Vous n\'avez pas donné une quantité de interactions qui devraient être supprimés !') // Checks if the `amount` parameter is given
+    if(isNaN(amount)) return Embed('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
+    if(amount > 100) return Embed('Vous ne pouvez pas supprimer plus de 100 interactions à la fois !') // Checks if the `amount` integer is bigger than 100
+    if(1 > amount) return Embed('Vous devez supprimer au moins 1 interaction !') // Checks if the `amount` integer is smaller than 1
+    await Embed('Ok ça marche')
     await interaction.deleteReply()
     interaction.channel.interactions.fetch({ limit: amount }).then(interactions => {
       try {
@@ -587,57 +533,58 @@ if(interaction.commandName === 'clear') {
     })
 }
 if(interaction.commandName === 'join') {
-  if(!interaction.member.voice.channel.id) return interaction.reply(`Je ne suis n\'es pas en vocal`)
-  if (!Client.voice.adapters.get(interaction.guild.id)) {
+  if(!interaction.member.voice.channel.id) return Embed(`Je ne suis n\'es pas en vocal`)
+  if (!Client.voice.adapters.get(interaction.guildId)) {
   await Voice.joinVoiceChannel({
     channelId: interaction.member.voice.channel.id,
-    guildId: interaction.guild.id,
+    guildId: interaction.guildId,
     adapterCreator: interaction.guild.voiceAdapterCreator
 })
-interaction.reply(`Salon ${interaction.member.voice.channel.name} rejoin avec succès`)
+Embed(`Salon ${interaction.member.voice.channel.name} rejoin avec succès`)
 }
 }
 if(interaction.commandName === 'leave') {
-  if(!interaction.member.voice.channel) return interaction.reply(`Tu dois être dans un vocal`);
+  if(!interaction.member.voice.channel) return Embed(`Tu dois être dans un vocal`);
     await player.stop()
-  queue.delete(interaction.guild.id);
-  Voice.getVoiceConnection(interaction.guild.id).destroy();
-  interaction.reply(`Vocal quitté :smiling_face_with_tear:`)
+  queue.delete(interaction.guildId);
+  Voice.getVoiceConnection(interaction.guildId).destroy();
+  Embed(`Vocal quitté :smiling_face_with_tear:`)
 }
 if(interaction.commandName === 'skip') {
-  var Songs = queue.get(interaction.guild.id);
+  var Songs = queue.get(interaction.guildId);
   if(!Songs[0]) {
-    await Voice.getVoiceConnection(interaction.guild.id).destroy();
-    return interaction.reply(`Il y a rien a skip`)
+    await Voice.getVoiceConnection(interaction.guildId).destroy();
+    return Embed(`Il y a rien a skip`)
   } else {
     await Songs.shift()
     await player.stop()
-    await Voice.getVoiceConnection(interaction.guild.id).removeAllListeners()
-    await play(interaction.guild.id)
-  interaction.reply(`Skipped !`)
+    await Voice.getVoiceConnection(interaction.guildId).removeAllListeners()
+    await play(interaction.guildId)
+  Embed(`Skipped !`)
   }
 }
 if(interaction.commandName === 'queue') {
-  var Songs = queue.get(interaction.guild.id);
-if(!Songs) return interaction.reply(`Il y a rien a voir`)
+  var Songs = queue.get(interaction.guildId);
+if(!Songs) return Embed(`Il y a rien a voir`)
 const Queue = new Discord.MessageEmbed()
 .setColor(`#00ffff`)
 .setTitle(`Queue de ${interaction.guild.name}`)
 await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
-await interaction.reply({ embeds: [Queue]})
+if(interaction.replied == true) return await interaction.channel.send({embeds: [Queue],fetchReply: true})
+else return await interaction.reply({embeds: [Queue],fetchReply: true})
 }
 if(interaction.commandName === 'loop') {
   var act = interaction.options.getBoolean('etat')
-  if(act == undefined) return interaction.reply(`L'état de la boucle est ${await db.get(`guild_${interaction.guild.id}_Music_Looping`)}`)
+  if(act == undefined) return Embed(`L'état de la boucle est ${await db.get(`guild_${interaction.guildId}_Music_Looping`)}`)
   if(act == false) var De = 'Désactivation'
- await db.set(`guild_${interaction.guild.id}_Music_Looping`, act)
-  interaction.reply(`${De || 'Activation'} de la boucle`)
+ await db.set(`guild_${interaction.guildId}_Music_Looping`, act)
+  await Embed(`${De || 'Activation'} de la boucle`)
 }
 if(interaction.commandName === 'volume') {
-  var nmb = interaction.options.getNumber('nombre')
-  if(!nmb) return interaction.reply(`Le volume du serveur est à ${await db.get(`guild_${interaction.guild.id}_Volume`) * 10}`)
- await db.set(`guild_${interaction.guild.id}_Volume`, nmb / 10)
-  interaction.reply(`Le volume est maintenant de ${nmb}`)
+  var nmb = await interaction.options.getNumber('nombre')
+  if(!nmb) return await Embed(`Le volume du serveur est à ${await db.get(`guild_${interaction.guildId}_Volume`) * 10}`)
+ await db.set(`guild_${interaction.guildId}_Volume`, nmb / 10)
+  await Embed(`Le volume est maintenant de ${nmb}`)
 }
 if(interaction.commandName === 'search') {
   var Search = interaction.options.getString('recherche')
@@ -648,7 +595,7 @@ if(interaction.commandName === 'search') {
   if(Type == 'SoundCloud'){
     await SC.search(Search).then(async Songs => {
       var songs = Songs.slice( 0, result )
-      if(!songs[0]) return interaction.reply(`Rien trouvé`)
+      if(!songs[0]) return Embed(`Rien trouvé`)
       await songs.forEach(async (Song,index) => {
         await SC.getSongInfo(Song.url).then(async song => {
   const Search2 = new Discord.MessageEmbed()
@@ -656,7 +603,8 @@ if(interaction.commandName === 'search') {
   .setImage(song.thumbnail)
   .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
   await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
-  await interaction.reply({ embeds: [Search2]})
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [Search2],fetchReply: true})
+  else return await interaction.reply({embeds: [Search2],fetchReply: true})
         })
       })
 })
@@ -670,31 +618,32 @@ if(interaction.commandName === 'search') {
   .setImage(video.image)
   .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
   await YTB.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
-  await interaction.reply({ embeds: [YTB]})
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [YTB],fetchReply: true})
+  else return await interaction.reply({embeds: [YTB],fetchReply: true})
 })
   }
 }
 if(interaction.commandName === 'play') {
   var Type = interaction.options.getString('type')
   var Query = interaction.options.getString('recherche')
-  if(!interaction.member.voice.channel) return interaction.reply(`Tu dois être dans un vocal`);
+  if(!interaction.member.voice.channel) return Embed(`Tu dois être dans un vocal`);
   const permissions = interaction.member.voice.channel.permissionsFor(interaction.member.user);
-  if(!permissions.has('CONNECT')) return interaction.reply(`Tu n\'as pas les bonnes permissions`);
-  if(!permissions.has('SPEAK')) return interaction.reply(`Tu n\'as pas les bonnes permissions`);
-  var Songs = queue.get(interaction.guild.id);
-              if (!Client.voice.adapters.get(interaction.guild.id)) {
+  if(!permissions.has('CONNECT')) return Embed(`Tu n\'as pas les bonnes permissions`);
+  if(!permissions.has('SPEAK')) return Embed(`Tu n\'as pas les bonnes permissions`);
+  var Songs = queue.get(interaction.guildId);
+              if (!Client.voice.adapters.get(interaction.guildId)) {
               var connection = await Voice.joinVoiceChannel({
                 channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guild.id,
+                guildId: interaction.guildId,
                 adapterCreator: interaction.guild.voiceAdapterCreator
             }).removeAllListeners()
           }
-
+  await Voice.getVoiceConnection(interaction.guildId).subscribe(player);
   if(Type === 'SoundCloud'){
-    await interaction.reply(`Recherche de **${Query}** sur Soundcloud`)
+    await Embed(`Recherche de **${Query}** sur SoundCloud`)
       const song = await songFinder(Query)
             const New = new Discord.MessageEmbed()
-            if(!song) return interaction.reply(`Rien trouvée`)
+            if(!song) return await Embed(`Rien trouvé`)
             var SONG = {
               type: 'sc',
               title: song.title,
@@ -708,23 +657,29 @@ if(interaction.commandName === 'play') {
             };
             if (!Songs) {
               var Song = [];
-              queue.set(interaction.guild.id, Song);
+              queue.set(interaction.guildId, Song);
               Song.push(SONG);
               New.setColor('#ff5d00')
               play(connection, interaction.guild)
             } else {
-              queue.push(SONG);
+              queue.get(interaction.guildId).push(SONG);
               New.setColor('FUCHSIA')
             }
+            var Dur = song.duration/1000
+    var test = await sep_seconds(Dur)
+    if(test.Hours !== 0) var Hour = test.Hours
+    if(test.Minutes !== 0) var Minutes = test.Minutes
+    if(Dur > 60) var one = ':'
+    if(Dur > 3600) var two = ':'
               New.setTimestamp()
 		      .setThumbnail(song.thumbnail)
 		      .setTitle(song.title)
 		      .setAuthor({name: song.author.name})
 		      .setURL(song.url)
-		      .setFooter({ text: `Vidéo ID : ${song.id} ; Duration : ${song.duration}`})
-              interaction.channel.send({ embeds : [New]})
+		      .setFooter({ text: `Musique ID : ${song.id} ; Duration : ${Hour || ''}${two || ''}${Minutes || ''}${one || ''}${test.Seconds}`})
+              await interaction.channel.send({ embeds : [New]})
             } else {
-            await interaction.reply(`Recherche de **${Query}** sur Youtube`)
+              await Embed(`Recherche de **${Query}** sur Youtube`)
             const video = await videoFinder(Query);
 
             if(video){
@@ -743,7 +698,7 @@ if(interaction.commandName === 'play') {
               };
               if (!Songs) {
                 var Songs = [];
-                queue.set(interaction.guild.id, Songs);
+                queue.set(interaction.guildId, Songs);
                 Songs.push(song);
                 play(connection, interaction.guild);
                 New.setColor('RED')
@@ -752,15 +707,16 @@ if(interaction.commandName === 'play') {
                 New.setColor(`#0xd677ff`)
               }
             New.setTimestamp()
-            .setThumbnail(video.image)
+            .setThumbnail(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg` || video.image)
             .setTitle(video.title)
             .setURL(video.url)
-            .setAuthor({name: video.author.name})
+            .setAuthor({name: `${video.author.name}`})
             .setFooter({text: `Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`});
-            interaction.channel.send({ embeds : [New]})
+            if(interaction.replied == true) await interaction.channel.send({embeds: [New],fetchReply: true})
+            else await interaction.reply({embeds: [New],fetchReply: true})
           } else {
-              interaction.reply(`Pas de vidéo trouvée`)
-                   queue.delete(interaction.guild.id);
+              await Embed('play',`Pas de vidéo trouvée`)
+                   queue.delete(interaction.guildId);
                    return;
                  }
                 }
@@ -769,8 +725,8 @@ if(interaction.commandName === 'support') {
   var Type = interaction.options.getString('type')
   var Msg = interaction.options.getString('message')
   await Client.users.cache.get('776140752752869398').send(`${Type} de la part de <@${interaction.member.user.id}> sur ${interaction.guild.name} : \n\n${Msg}`)
-  interaction.reply('Votre message a bien été envoyé, veuillez patientez')
+  await Embed('Votre message a bien été envoyé, veuillez patientez')
 }
 });
 
-Client.login(process.env.TOKEN)
+Client.login(process.env.Token)
