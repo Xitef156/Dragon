@@ -412,7 +412,7 @@ Client.on('interactionCreate', async interaction => {
   if(interaction.commandName === 'weather'){
     const city = interaction.options.data[0].value
     const country = interaction.options.data[1].value
-    weather.find({search: `${city}, ${country}`, degreeType: `C`}, function(error, result){
+    weather.find({search: `${city}, ${country}`, degreeType: `C`}, async function(error, result){
       if (error) return Embed(error)
       if (error) return Client.channels.cache.get(Ch_Err).send(`Erreur de la commande *weather* : **${error}**`)
       if (!city) return Embed(`Vous n'avez pas entré le nom du lieu dont vous souhaitez connaître la météo.`)
