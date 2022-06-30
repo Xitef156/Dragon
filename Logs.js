@@ -296,7 +296,8 @@ const Set = new SlashCommandBuilder()
 	.addStringOption(option =>
 		option.setName('type')
 			.setDescription("Etat du channel d'arrivé ou de départ des membres")
-      .addChoices({name:'Arrivé',value:'Add'},{name:'Départ',value:'Remove'}))
+      .addChoices({name:'Arrivé',value:'Add'},{name:'Départ',value:'Remove'})
+      .setRequired(true))
       .addChannelOption(chan => chan
         .setName('salon')
         .setDescription('Salon pour les interactions'))
@@ -304,8 +305,34 @@ const Set = new SlashCommandBuilder()
           .setName('etat')
           .setDescription("Activé/Désactivé l'option"))
 
+const Role = new SlashCommandBuilder()
+.setName('role')
+.setDescription('Ajoute un rôle par Embed')
+.addStringOption(role => role
+  .setName('desc')
+  .setDescription("Description des rôles (description_role1 ; description_role2 ; description_role3 ; ...)")
+  .setRequired(true))
+  .addStringOption(id => id
+    .setName('ids')
+    .setDescription('Mets les ids (id_role1 ; id_role2 ; is_role3 ; ...)')
+    .setRequired(true))
+    .addStringOption(emoji => emoji
+      .setName('emoji')
+      .setDescription('Emoji de réaction (emoji_role_1 ; emoji_role_2 ; emoji_role_3 ; ...)')
+      .setRequired(true))
+      .addStringOption(title => title
+        .setName('titre')
+        .setDescription('Met un titre'))
+        .addStringOption(desc => desc
+          .setName('description')
+          .setDescription('Ajoute une description'))
+          .addStringOption(thumb => thumb
+            .setName('miniature')
+            .setDescription("Met un lien d'une image"))
+
 Client.on(`ready`, async () => {
     await Client.application.commands.create(Set)
+    await Client.application.commands.create(Role)
   var dir = './Guilds_Bot';
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   console.log('Coucou')
@@ -457,7 +484,9 @@ Client.on(`channelCreate`, async channel => {
   Client.channels.cache.get(Ch_Channel).send(`**${moment(channel.createdAt).format('H:mm:ss')}** Salon crée : ${channel.toString()} (**${channel.name}**) dans la Catégorie : **${channel.parent.name}**`);
 });
 
-Client.on(`channelDelete`, async channel => Client.channels.cache.get(await db.get(`guild_${channel.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Salon détruit : **${channel.name}** dans la Catégorie : **${channel.parent.name}**`));
+Client.on(`channelDelete`, async channel => {
+  Client.channels.cache.get(await db.get(`guild_${channel.guild.id}_Channel`)).send(`**${moment().format('H:mm:ss')}** Salon détruit : **${channel.name || 'Inconnu'}** dans la Catégorie : **${channel.parent.name}**`)
+});
 
 Client.on("channelPinsUpdate", function(channel, time){
   console.log(`channelPinsUpdate: ${channel}:${time}`);
@@ -785,7 +814,14 @@ Client.on('stickerUpdate', function (Oldsticker,Newsticker) {
   console.log(Newsticker)
 });
 Client.on('interactionCreate', async interaction => {
+  if(interaction.channel.type == 'DM' && interaction.commandName !== 'link') return
 	if (!interaction.isCommand()) return;
+  async function Embed(content) {
+  await emb.setTitle(content)
+  await emb.setColor(Bot_Color)
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [emb],fetchReply: true})
+  else return await interaction.reply({embeds: [emb],fetchReply: true})
+}
   if(interaction.commandName === 'set') {
     var Type = interaction.options.getString('type')
     var Channel = interaction.options.getChannel('salon')
@@ -804,9 +840,55 @@ Client.on('interactionCreate', async interaction => {
     if(Channel != undefined) var chan = Channel.id
    await db.set(`guild_${interaction.guild.id}_Member${Type}`, (chan ||await db.get(`guild_${interaction.guild.id}_Member${Type}`)))
    await db.set(`guild_${interaction.guild.id}_Member${type}`, (Etat ||await db.get(`guild_${interaction.guild.id}_Member${type}`)))
-    if((Channel && Etat) == undefined) return interaction.reply(`Le salon ${Client.channels.cache.get(Add)} est ${welcome} pour le salon d'arrivé et ${Client.channels.cache.get(Remove)} est ${left} pour le salon de départ`)
-    interaction.reply(`Le salon ${Channel.name} est ${Etat} pour ${fr}`)
+    if((Channel && Etat) == undefined) return Embed(`Le salon ${Client.channels.cache.get(Add)} est ${welcome} pour le salon d'arrivé et ${Client.channels.cache.get(Remove)} est ${left} pour le salon de départ`)
+    Embed(`Le salon ${Channel.name} est ${Etat} pour ${fr}`)
+  }
+  if(interaction.commandName === 'role') {
+    const str = interaction.options.data
+    const Desc = interaction.options.getString('desc').split(` ; `)
+    const Id = interaction.options.getString('ids').split(` ; `)
+    const Emoji = interaction.options.getString('emoji').split(` ; `)
+    const Title = interaction.options.getString('titre')
+    const Descript = interaction.options.getString('description')
+    const Thumb = interaction.options.getString('miniature')
+    if(Id.length !== Emoji.length) return Embed(`Il n'y a pas le même nombre de rôle que d'émojis`)
+    if(Desc.length !== Emoji.length) return Embed(`Il n'y a pas le même nombre d'émojis que de description`)
+    if(Desc.length !== Id.length) return Embed(`Il n'y a pas le même nombre de rôle que de description`)
+    Id.forEach(role => { if(isNaN(role)) return Embed(`Il y a des rôles qui ne sont pas des id`) })
+    Emoji.forEach(emo => { if(emo.startsWith(`:`)) return Embed(`Il y a des émojis qui commence pas par :`) })
+    const Embed = new Discord.MessageEmbed()
+    .setColor(Bot_Color)
+    .setTimestamp()
+    Id.forEach(role => { if(!interaction.guild.roles.fetch(role)) return Embed(`${role} est inconnu`) })
+    if(Title != undefined) Embed.setTitle(Title)
+    if(Descript != undefined) Embed.setDescription(Descript)
+    if(Thumb != undefined) Embed.setThumbnail(Thumb || `https://www.elegantthemes.com/blog/wp-content/uploads/2018/02/502-error.png`)
+    await Id.forEach(async (Role,index) => {
+      var desc = Desc[index]
+      var emo = Emoji[index]
+      var role = await interaction.guild.roles.cache.find(ID => ID.id == Role)
+      Embed.addField(`${emo} ${role.name}`, desc)
+    })
+    Reaction()
+    async function Reaction() {
+      await Embed('Pong!');
+    await interaction.deleteReply();
+      interaction.channel.send({embeds: [Embed]}).then(async msg => {
+        Emoji.forEach(emo => msg.react(emo));
+        var List_react = React.get(interaction.guild.id)
+        var react = {
+          interaction: msg,
+          emojis: Emoji,
+          roles: Id
+        }
+        if(!List_react){
+          var List = [];
+          React.set(interaction.guild.id, List)
+          List.push(react)
+        } else List_react.push(react)
+  })
+    }
   }
 })
 
-Client.login(process.env.Token);
+Client.login(process.env.Token)
