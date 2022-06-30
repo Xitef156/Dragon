@@ -405,7 +405,7 @@ await Client.guilds.cache.forEach(async guild => {
 });
 
 Client.on('interactionCreate', async interaction => {
-  await interaction.channel.send('ok')
+  await interaction.reply('ok')
   if(z == 0) return;
   else {
   async function Embed(content) {
@@ -711,7 +711,6 @@ if(interaction.commandName === 'play') {
                 Songs.push(song);
                 New.setColor(`#0xd677ff`)
               }
-              console.log(img)
             New.setTimestamp()
             .setThumbnail(img)
             .setTitle(video.title)
