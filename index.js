@@ -43,7 +43,10 @@ const Bot_Color = `#42ff00`
 const Ch_Err = '834751451090911292'
 moment.locale('fr');
 
+
 async function play(channel, guild){
+  var connection = await Voice.getVoiceConnection(guild.id);
+  await connection.subscribe(player)
   var Songs = await queue.get(guild.id)
   var Song = await Songs[0];
   if (!Song) {
@@ -64,10 +67,8 @@ async function play(channel, guild){
 }
 Audio(Song)
   async function Play(stream){
-    var connection = await Voice.getVoiceConnection(guild.id)
   var STREAM = await Voice.createAudioResource(stream, {inputType: Voice.StreamType.Arbitrary})
   await player.play(STREAM)
-  player.on('error',() => Audio(Song))
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
     var Loop = await db.get(`guild_${guild.id}_Music_Looping`)
     if(Loop == true) return play(channel, guild);
@@ -502,7 +503,7 @@ if(interaction.commandName === 'tempban') {
         else {
             if(member.bannable && interaction.member.user.id != member.user.id){
                 member.ban({reason: `${reason || 'Aucune raison'}\n\n(Par Dragon Bot et ${interaction.member.user.tag})`})
-                Unban(member,interaction.guildId,ms,interaction.member.user.id,NOW)
+                Unban(member,interaction.guild.id,ms,interaction.member.user.id,NOW)
                 Embed(`<@${member.user.id}> a été banni avec succès ; Il sera débanni le ${finish.format('lll')}`);
             }
             else Embed(`Impossible de ban ce membre`);
@@ -532,10 +533,10 @@ if(interaction.commandName === 'clear') {
 }
 if(interaction.commandName === 'join') {
   if(!interaction.member.voice.channel.id) return Embed(`Je ne suis n\'es pas en vocal`)
-  if (!Client.voice.adapters.get(interaction.guildId)) {
+  if (!Client.voice.adapters.get(interaction.guild.id)) {
   await Voice.joinVoiceChannel({
     channelId: interaction.member.voice.channel.id,
-    guildId: interaction.guildId,
+    guildId: interaction.guild.id,
     adapterCreator: interaction.guild.voiceAdapterCreator
 })
 Embed(`Salon ${interaction.member.voice.channel.name} rejoin avec succès`)
@@ -544,25 +545,25 @@ Embed(`Salon ${interaction.member.voice.channel.name} rejoin avec succès`)
 if(interaction.commandName === 'leave') {
   if(!interaction.member.voice.channel) return Embed(`Tu dois être dans un vocal`);
     await player.stop()
-  queue.delete(interaction.guildId);
-  Voice.getVoiceConnection(interaction.guildId).disconnect();
+  queue.delete(interaction.guild.id);
+  Voice.getVoiceConnection(interaction.guild.id).disconnect();
   Embed(`Vocal quitté :smiling_face_with_tear:`)
 }
 if(interaction.commandName === 'skip') {
-  var Songs = queue.get(interaction.guildId);
+  var Songs = queue.get(interaction.guild.id);
   if(!Songs[0]) {
-    await Voice.getVoiceConnection(interaction.guildId).disconnect();
+    await Voice.getVoiceConnection(interaction.guild.id).disconnect();
     return Embed(`Il y a rien a skip`)
   } else {
     await Songs.shift()
     await player.stop()
-    await Voice.getVoiceConnection(interaction.guildId).removeAllListeners()
-    await play(interaction.guildId)
+    await Voice.getVoiceConnection(interaction.guild.id).removeAllListeners()
+    await play(interaction.guild.id)
   Embed(`Skipped !`)
   }
 }
 if(interaction.commandName === 'queue') {
-  var Songs = queue.get(interaction.guildId);
+  var Songs = queue.get(interaction.guild.id);
 if(!Songs) return Embed(`Il y a rien a voir`)
 const Queue = new Discord.MessageEmbed()
 .setColor(`#00ffff`)
@@ -573,15 +574,15 @@ else return await interaction.channel.send({embeds: [Queue]})
 }
 if(interaction.commandName === 'loop') {
   var act = interaction.options.getBoolean('etat')
-  if(act == undefined) return Embed(`L'état de la boucle est ${await db.get(`guild_${interaction.guildId}_Music_Looping`)}`)
+  if(act == undefined) return Embed(`L'état de la boucle est ${await db.get(`guild_${interaction.guild.id}_Music_Looping`)}`)
   if(act == false) var De = 'Désactivation'
- await db.set(`guild_${interaction.guildId}_Music_Looping`, act)
+ await db.set(`guild_${interaction.guild.id}_Music_Looping`, act)
   await Embed(`${De || 'Activation'} de la boucle`)
 }
 if(interaction.commandName === 'volume') {
   var nmb = await interaction.options.getNumber('nombre')
-  if(!nmb) return await Embed(`Le volume du serveur est à ${await db.get(`guild_${interaction.guildId}_Volume`) * 10}`)
- await db.set(`guild_${interaction.guildId}_Volume`, nmb / 10)
+  if(!nmb) return await Embed(`Le volume du serveur est à ${await db.get(`guild_${interaction.guild.id}_Volume`) * 10}`)
+ await db.set(`guild_${interaction.guild.id}_Volume`, nmb / 10)
   await Embed(`Le volume est maintenant de ${nmb}`)
 }
 if(interaction.commandName === 'search') {
@@ -611,15 +612,15 @@ if(interaction.commandName === 'search') {
   var Video = await ytSearch({ search: Search })
   var videos = Video.videos.slice( 0, result )
   videos.forEach(async (video, index) => {
-    await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
-      if(res.statusCode == 200) var img = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`
-      else var img = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`
+    if(await db.get(`Thumbnail_${video.videoId}`) == undefined) await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
+      if(res.statusCode == 200) db.set(`Thumbnail_${video.videoId}`,`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`)
+      else db.set(`Thumbnail_${video.videoId}`,`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`)
+  })
   const YTB = new Discord.MessageEmbed()
   .setColor(Bot_Color)
-  .setImage(img)
+  .setImage(await db.get(`Thumbnail_${video.videoId}`) || video.image )
   .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
   await YTB.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
-    });
   if(interaction.replied == true) return await interaction.channel.send({embeds: [YTB]})
   else return await interaction.channel.send({embeds: [YTB]})
 })
@@ -632,15 +633,14 @@ if(interaction.commandName === 'play') {
   const permissions = interaction.member.voice.channel.permissionsFor(interaction.member.user);
   if(!permissions.has('CONNECT')) return Embed(`Tu n\'as pas les bonnes permissions`);
   if(!permissions.has('SPEAK')) return Embed(`Tu n\'as pas les bonnes permissions`);
-  var Songs = queue.get(interaction.guildId);
-              if (!Client.voice.adapters.get(interaction.guildId)) {
+  var Songs = queue.get(interaction.guild.id)
+              if (!Client.voice.adapters.get(interaction.guild.id)) {
               var connection = await Voice.joinVoiceChannel({
                 channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guildId,
+                guildId: interaction.guild.id,
                 adapterCreator: interaction.guild.voiceAdapterCreator
-            }).removeAllListeners()
+            })
           }
-  await Voice.getVoiceConnection(interaction.guildId).subscribe(player);
   if(Type === 'SoundCloud'){
     await Embed(`Recherche de **${Query}** sur SoundCloud`)
       const song = await songFinder(Query)
@@ -659,12 +659,12 @@ if(interaction.commandName === 'play') {
             };
             if (!Songs) {
               var Song = [];
-              queue.set(interaction.guildId, Song);
+              queue.set(interaction.guild.id, Song);
               Song.push(SONG);
               New.setColor('#ff5d00')
               play(connection, interaction.guild)
             } else {
-              queue.get(interaction.guildId).push(SONG);
+              queue.get(interaction.guild.id).push(SONG);
               New.setColor('FUCHSIA')
             }
             var Dur = song.duration/1000
@@ -685,9 +685,10 @@ if(interaction.commandName === 'play') {
             const video = await videoFinder(Query);
 
             if(video){
-              await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
-                if(res.statusCode == 200) var img = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`
-                else var img = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`
+              if(await db.get(`Thumbnail_${video.videoId}`) == undefined) await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
+                if(res.statusCode == 200) db.set(`Thumbnail_${video.videoId}`,`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`)
+                else db.set(`Thumbnail_${video.videoId}`,`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`)
+            })
               const New = new Discord.MessageEmbed()
               var song = {
                 type: 'ytb',
@@ -703,7 +704,7 @@ if(interaction.commandName === 'play') {
               };
               if (!Songs) {
                 var Songs = [];
-                queue.set(interaction.guildId, Songs);
+                queue.set(interaction.guild.id, Songs);
                 Songs.push(song);
                 play(connection, interaction.guild);
                 New.setColor('RED')
@@ -712,17 +713,16 @@ if(interaction.commandName === 'play') {
                 New.setColor(`#0xd677ff`)
               }
             New.setTimestamp()
-            .setThumbnail(img)
+            .setThumbnail(await db.get(`Thumbnail_${video.videoId}`) || video.image)
             .setTitle(video.title)
             .setURL(video.url)
             .setAuthor({name: video.author.name})
             .setFooter({text: `Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`});
             if(interaction.replied == true) await interaction.channel.send({embeds: [New]})
             else await interaction.channel.send({embeds: [New]})
-              });
           } else {
               await Embed('play',`Pas de vidéo trouvée`)
-                   queue.delete(interaction.guildId);
+                   queue.delete(interaction.guild.id);
                    return;
                  }
                 }
