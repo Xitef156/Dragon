@@ -34,6 +34,7 @@ makeCache: Discord.Options.cacheWithLimits({
 }), allowedMentions: { parse: ['users', 'roles', 'everyone'], repliedUser: true }
 });
 
+var z = 0
 const emb = new Discord.MessageEmbed()
 const queue = new Map();
 const player = Voice.createAudioPlayer().setMaxListeners(30)
@@ -68,7 +69,7 @@ Audio(Song)
   await player.play(STREAM)
   player.on('error',() => Audio(Song))
   player.on(Voice.AudioPlayerStatus.Idle, async () => {
-    var Loop = await db.get(`guild_${channel.guild}_Music_Looping`)
+    var Loop = await db.get(`guild_${guild.id}_Music_Looping`)
     if(Loop == true) return play(channel, guild);
     else {
       await Songs.shift();
@@ -145,14 +146,6 @@ async function sep_seconds(totalSeconds) {
     Seconds: seconds
   }
 }
-
-async function Youtube_img(id) {
-  request.head(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`, function(err, res, body){
-    if(res.headers['content-type'] == 'image/jpeg' && res.headers['content-length'] == 1097) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`
-    else return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`
-  });
-}
-
 
 const Weather = new SlashCommandBuilder()
 .setName('weather')
@@ -316,37 +309,39 @@ Client.on(`ready`, async () => {
   console.log(`Coucou ${process.version}`)
   console.log(`\x1b[32m\x1b[1mJe suis dans ${Client.guilds.cache.size} serveurs`)
   const express = require('express');
-  const app = express();
-const port = 3000
+const app = express();
+const port = 3000;
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+res.send('Hello World!')
 })
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+console.log(`Example app listening on port ${port}`)
 })
   try {
-    await Client.application.commands.create(Weather)
-    await Client.application.commands.create(Maths)
-    await Client.application.commands.create(Link)
-    await Client.application.commands.create(List)
-    await Client.application.commands.create(Say)
-    await Client.application.commands.create(TempBan)
-    await Client.application.commands.create(Clear)
-    await Client.application.commands.create(Join)
-    await Client.application.commands.create(Leave)
-    await Client.application.commands.create(Skip)
-    await Client.application.commands.create(Queue)
-    await Client.application.commands.create(Loop)
-    await Client.application.commands.create(Volume)
-    await Client.application.commands.create(Search)
-    await Client.application.commands.create(Play)
-    await Client.application.commands.create(Support)
-    console.log('Commandes installés')
+    Client.application.commands.create(Weather)
+    Client.application.commands.create(Maths)
+    Client.application.commands.create(Link)
+    Client.application.commands.create(List)
+    Client.application.commands.create(Say)
+    Client.application.commands.create(TempBan)
+    Client.application.commands.create(Clear)
+    Client.application.commands.create(Join)
+    Client.application.commands.create(Leave)
+    Client.application.commands.create(Skip)
+    Client.application.commands.create(Queue)
+    Client.application.commands.create(Loop)
+    Client.application.commands.create(Volume)
+    Client.application.commands.create(Search)
+    Client.application.commands.create(Play)
+    Client.application.commands.create(Support)
   }catch(e) {
     console.log('Erreur')
     console.log(e)
+  } finally {
+    await console.log('Commandes installés')
+    await z++
   }
 setInterval(() => {
   var date = moment().format('Do MMMM YYYY');
@@ -410,11 +405,13 @@ await Client.guilds.cache.forEach(async guild => {
 });
 
 Client.on('interactionCreate', async interaction => {
+  await interaction.channel.send('ok')
+  if(z == 0) return;
+  else {
   async function Embed(content) {
   await emb.setTitle(content)
   await emb.setColor(Bot_Color)
-  if(interaction.replied == true) return await interaction.channel.send({embeds: [emb],fetchReply: true})
-  else return await interaction.reply({embeds: [emb],fetchReply: true})
+  return await interaction.channel.send({embeds: [emb]})
 }
   if(!interaction.isCommand()) return
   if(interaction.member == null && interaction.commandName !== ('link' || 'weather' || 'maths' || 'say' || 'support')) return Embed("Pas de commandes en DM (sauf /link ; /weather ; /maths ; /say et /support), invite moi sur un serveur d'abord")
@@ -438,8 +435,8 @@ Client.on('interactionCreate', async interaction => {
       .addField(`Vitesse du vent : `, current.winddisplay, true)
       .addField(`Humidité : `, `${current.humidity}%`, true)
       .addField(`Timezone : `, `UTC${location.timezone}`, true)
-      if(interaction.replied == true) return await interaction.channel.send({embeds: [embed],fetchReply: true})
-      else return await interaction.reply({embeds: [embed],fetchReply: true})
+      if(interaction.replied == true) return await interaction.channel.send({embeds: [embed]})
+      else return await interaction.channel.send({embeds: [embed]})
   })
 }
 if(interaction.commandName === 'maths') {
@@ -471,8 +468,6 @@ if(interaction.commandName === 'link') {
   )
 }
 if(interaction.commandName === 'list') {
-  await Embed('Ok')
-  await interaction.deleteReply()
   const Embed = new Discord.MessageEmbed()
   Embed.setColor(`#42ff00`)
     if(interaction.options.getString('type') === `role`){
@@ -488,11 +483,7 @@ if(interaction.commandName === 'list') {
       interaction.member.send({ embeds: [Embed]})
     }
 }
-if(interaction.commandName === 'say') {
-  await Embed('Envoie..')
-  await interaction.deleteReply()
-  Client.channels.cache.get(interaction.options.getChannel('salon').id || interaction.channelId).send(interaction.options.getString('msg'))
-}
+if(interaction.commandName === 'say') Client.channels.cache.get(interaction.options.getChannel('salon').id || interaction.channelId).send(interaction.options.getString('msg'))
 if(interaction.commandName === 'tempban') {
   if(interaction.member.permissions.toArray().includes(`ADMINISTRATOR`) || interaction.member.id === '776140752752869398'){
     var now = moment()
@@ -530,8 +521,6 @@ if(interaction.commandName === 'clear') {
     if(isNaN(amount)) return Embed('Le paramètre de quantité n\'est pas un nombre !') // Checks if the `amount` parameter is a number. If not, the command throws an error
     if(amount > 100) return Embed('Vous ne pouvez pas supprimer plus de 100 interactions à la fois !') // Checks if the `amount` integer is bigger than 100
     if(1 > amount) return Embed('Vous devez supprimer au moins 1 interaction !') // Checks if the `amount` integer is smaller than 1
-    await Embed('Ok ça marche')
-    await interaction.deleteReply()
     interaction.channel.interactions.fetch({ limit: amount }).then(interactions => {
       try {
         interaction.channel.bulkDelete(interactions)
@@ -556,13 +545,13 @@ if(interaction.commandName === 'leave') {
   if(!interaction.member.voice.channel) return Embed(`Tu dois être dans un vocal`);
     await player.stop()
   queue.delete(interaction.guildId);
-  Voice.getVoiceConnection(interaction.guildId).destroy();
+  Voice.getVoiceConnection(interaction.guildId).disconnect();
   Embed(`Vocal quitté :smiling_face_with_tear:`)
 }
 if(interaction.commandName === 'skip') {
   var Songs = queue.get(interaction.guildId);
   if(!Songs[0]) {
-    await Voice.getVoiceConnection(interaction.guildId).destroy();
+    await Voice.getVoiceConnection(interaction.guildId).disconnect();
     return Embed(`Il y a rien a skip`)
   } else {
     await Songs.shift()
@@ -579,8 +568,8 @@ const Queue = new Discord.MessageEmbed()
 .setColor(`#00ffff`)
 .setTitle(`Queue de ${interaction.guild.name}`)
 await Songs.forEach((song, index) => Queue.addField(`${index + 1}:`, `[${song.title}](${song.url}) \nDe [${song.author.name}](${song.author.url})\n${song.duration}`))
-if(interaction.replied == true) return await interaction.channel.send({embeds: [Queue],fetchReply: true})
-else return await interaction.reply({embeds: [Queue],fetchReply: true})
+if(interaction.replied == true) return await interaction.channel.send({embeds: [Queue]})
+else return await interaction.channel.send({embeds: [Queue]})
 }
 if(interaction.commandName === 'loop') {
   var act = interaction.options.getBoolean('etat')
@@ -612,8 +601,8 @@ if(interaction.commandName === 'search') {
   .setImage(song.thumbnail)
   .setTitle(`${songs.length || 1}/${result || 1} Résultats pour ${Search}`)
   await Search2.addField(`${index + 1} : ${song.title}`, `${song.author.name} (ID: ${song.id} ; Url: ${song.url}) ; ${song.duration} ; ${song.likes} Likes ; Date : ${song.age}`)
-  if(interaction.replied == true) return await interaction.channel.send({embeds: [Search2],fetchReply: true})
-  else return await interaction.reply({embeds: [Search2],fetchReply: true})
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [Search2]})
+  else return await interaction.channel.send({embeds: [Search2]})
         })
       })
 })
@@ -622,13 +611,17 @@ if(interaction.commandName === 'search') {
   var Video = await ytSearch({ search: Search })
   var videos = Video.videos.slice( 0, result )
   videos.forEach(async (video, index) => {
+    await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
+      if(res.statusCode == 200) var img = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`
+      else var img = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`
   const YTB = new Discord.MessageEmbed()
   .setColor(Bot_Color)
-  .setImage(await Youtube_img(video.videoId))
+  .setImage(img)
   .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
   await YTB.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
-  if(interaction.replied == true) return await interaction.channel.send({embeds: [YTB],fetchReply: true})
-  else return await interaction.reply({embeds: [YTB],fetchReply: true})
+    });
+  if(interaction.replied == true) return await interaction.channel.send({embeds: [YTB]})
+  else return await interaction.channel.send({embeds: [YTB]})
 })
   }
 }
@@ -692,6 +685,9 @@ if(interaction.commandName === 'play') {
             const video = await videoFinder(Query);
 
             if(video){
+              await request(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`, async(err,res) => {
+                if(res.statusCode == 200) var img = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`
+                else var img = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`
               const New = new Discord.MessageEmbed()
               var song = {
                 type: 'ytb',
@@ -715,14 +711,16 @@ if(interaction.commandName === 'play') {
                 Songs.push(song);
                 New.setColor(`#0xd677ff`)
               }
+              console.log(img)
             New.setTimestamp()
-            .setThumbnail(await Youtube_img(video.videoId))
+            .setThumbnail(img)
             .setTitle(video.title)
             .setURL(video.url)
-            .setAuthor({name: `${video.author.name}`})
+            .setAuthor({name: video.author.name})
             .setFooter({text: `Vidéo ID : ${video.videoId} ; Duration : ${video.timestamp}`});
-            if(interaction.replied == true) await interaction.channel.send({embeds: [New],fetchReply: true})
-            else await interaction.reply({embeds: [New],fetchReply: true})
+            if(interaction.replied == true) await interaction.channel.send({embeds: [New]})
+            else await interaction.channel.send({embeds: [New]})
+              });
           } else {
               await Embed('play',`Pas de vidéo trouvée`)
                    queue.delete(interaction.guildId);
@@ -736,6 +734,7 @@ if(interaction.commandName === 'support') {
   await Client.users.cache.get('776140752752869398').send(`${Type} de la part de <@${interaction.member.user.id}> sur ${interaction.guild.name} : \n\n${Msg}`)
   await Embed('Votre message a bien été envoyé, veuillez patientez')
 }
+  }
 });
 
 Client.login(process.env.Token)
