@@ -7,7 +7,8 @@ const db = new QuickDB();
 const moment = require('moment');
 const fs = require('fs');
 const SoundCloud = require('soundcloud-scraper');
-const ytdl = require('ytdl-core')
+const ytdl = require('ytdl-core');
+const request = require('request');
 
 const SC = new SoundCloud.Client();
 const Instent = Discord.Intents.FLAGS
@@ -144,6 +145,14 @@ async function sep_seconds(totalSeconds) {
     Seconds: seconds
   }
 }
+
+async function Youtube_img(id) {
+  request.head(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`, function(err, res, body){
+    if(res.headers['content-type'] == 'image/jpeg' && res.headers['content-length'] == 1097) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+    else return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`
+  });
+}
+
 
 const Weather = new SlashCommandBuilder()
 .setName('weather')
@@ -615,7 +624,7 @@ if(interaction.commandName === 'search') {
   videos.forEach(async (video, index) => {
   const YTB = new Discord.MessageEmbed()
   .setColor(Bot_Color)
-  .setImage(video.image)
+  .setImage(await Youtube_img(video.videoId))
   .setTitle(`${videos.length || 1}/${result || 1} Résultats pour ${Search}`)
   await YTB.addField(`${index + 1} : ${video.title}`, `${video.author.name} (${video.videoId}) ; ${video.timestamp} ; ${video.views} Vues ; Date : ${video.ago}`)
   if(interaction.replied == true) return await interaction.channel.send({embeds: [YTB],fetchReply: true})
@@ -707,7 +716,7 @@ if(interaction.commandName === 'play') {
                 New.setColor(`#0xd677ff`)
               }
             New.setTimestamp()
-            .setThumbnail(`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg` || video.image)
+            .setThumbnail(await Youtube_img(video.videoId))
             .setTitle(video.title)
             .setURL(video.url)
             .setAuthor({name: `${video.author.name}`})
